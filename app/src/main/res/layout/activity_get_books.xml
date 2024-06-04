@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.quaap.bookymcbookface.GetBooksActivity">
+    tools:context=".GetBooksActivity">
 
     <TextView
         android:id="@+id/webs_desc"

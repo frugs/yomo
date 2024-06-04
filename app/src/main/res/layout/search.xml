@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
@@ -18,7 +19,9 @@
         android:ems="10"
         android:hint="@string/hint_search_text"
         android:imeOptions="actionSearch"
-        android:inputType="textPersonName" />
+        android:inputType="textPersonName"
+        android:minHeight="48dp"
+        tools:ignore="Autofill" />
 
     <RadioGroup
         android:id="@+id/search_where"
@@ -30,6 +33,7 @@
             android:id="@+id/search_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:minHeight="48dp"
             android:layout_weight="1"
             android:text="@string/title" />
 
@@ -37,6 +41,7 @@
             android:id="@+id/search_author"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:minHeight="48dp"
             android:layout_weight="1"
             android:text="@string/author" />
 
@@ -45,6 +50,7 @@
             android:id="@+id/search_authortitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:minHeight="48dp"
             android:layout_weight="1"
             android:checked="true"
             android:text="@string/both" />
