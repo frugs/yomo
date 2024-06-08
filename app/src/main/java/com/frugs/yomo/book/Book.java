@@ -350,6 +350,8 @@ public abstract class Book {
             book = new TxtBook(context);
         } else if (filename.toLowerCase().endsWith(".html") || filename.toLowerCase().endsWith(".htm")) {
             book = new HtmlBook(context);
+        } else if (filename.toLowerCase().endsWith(".ncode")) {
+            book = new SyosetuBook(context);
         }
 
         return book;

@@ -19,7 +19,6 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.annotation.RequiresApi;
 import android.util.Log;
 import android.view.Display;
 import android.view.MenuItem;
@@ -37,6 +36,8 @@ import android.widget.ImageButton;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.Toast;
+
+import androidx.annotation.RequiresApi;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -123,6 +124,7 @@ public class ReaderActivity extends Activity {
 
         webView.getSettings().setDefaultFontSize(18);
         webView.getSettings().setDefaultFixedFontSize(18);
+        webView.getSettings().setAllowFileAccess(true);
 
         webView.setNetworkAvailable(false);
 
@@ -222,8 +224,6 @@ public class ReaderActivity extends Activity {
                 return true;
             }
 
-
-            @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();

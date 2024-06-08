@@ -3,6 +3,10 @@ package com.frugs.yomo;
 import android.app.Application;
 import android.content.Context;
 
+import androidx.annotation.Nullable;
+
+import com.frugs.yomo.syosetu.SyosetuService;
+
 /**
  * Copyright (C) 2017   Tom Kliethermes
  *
@@ -18,17 +22,23 @@ import android.content.Context;
 
 public class BookyApp extends Application {
 
-    private BookDb db;
+    @Nullable private BookDb db;
+    @Nullable private SyosetuService syosetuService;
 
     @Override
     public void onCreate() {
         super.onCreate();
 
         db = new BookDb(this);
+        syosetuService = new SyosetuService(this);
     }
 
     public static BookDb getDB(Context context) {
         return ((BookyApp)context.getApplicationContext()).db;
+    }
+
+    public static SyosetuService getSyosetuService(Context context) {
+        return ((BookyApp)context.getApplicationContext()).syosetuService;
     }
 
 

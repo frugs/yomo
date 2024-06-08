@@ -14,13 +14,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.DefaultItemAnimator;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
 import android.text.SpannableString;
 import android.text.TextWatcher;
@@ -41,6 +34,14 @@ import android.widget.PopupMenu;
 import android.widget.RadioButton;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -76,9 +77,9 @@ public class BookListActivity extends AppCompatActivity {
     private static final int STARTOPEN = 2;
     private static final int STARTALL = 3;
 
-    private static final String ACTION_SHOW_OPEN = "com.quaap.bookymcbookface.SHOW_OPEN_BOOKS";
-    private static final String ACTION_SHOW_UNREAD = "com.quaap.bookymcbookface.SHOW_UNREAD_BOOKS";
-    public static final String ACTION_SHOW_LAST_STATUS = "com.quaap.bookymcbookface.SHOW_LAST_STATUS";
+    private static final String ACTION_SHOW_OPEN = "com.frugs.yomo.SHOW_OPEN_BOOKS";
+    private static final String ACTION_SHOW_UNREAD = "com.frugs.yomo.SHOW_UNREAD_BOOKS";
+    public static final String ACTION_SHOW_LAST_STATUS = "com.frugs.yomo.SHOW_LAST_STATUS";
 
     private SharedPreferences data;
 
@@ -98,7 +99,6 @@ public class BookListActivity extends AppCompatActivity {
     public final static String prefname = "booklist";
 
     private boolean openLastread = false;
-    private static boolean alreadyStarted=false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -473,6 +473,9 @@ public class BookListActivity extends AppCompatActivity {
         } else if (itemId == R.id.menu_enable_scroll) {
             item.setChecked(!item.isChecked());
             data.edit().putBoolean(ENABLE_DRAG_SCROLL_KEY, item.isChecked()).apply();
+        } else if (itemId == R.id.menu_open_syosetu) {
+            Intent intent = new Intent(this, SyosetuActivity.class);
+            startActivity(intent);
         } else {
             return super.onOptionsItemSelected(item);
         }
@@ -842,6 +845,8 @@ public class BookListActivity extends AppCompatActivity {
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
         boolean yay = true;
         switch (requestCode) {
             case REQUEST_READ_EXTERNAL_STORAGE_NOYAY:

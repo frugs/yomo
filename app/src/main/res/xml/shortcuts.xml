@@ -9,8 +9,8 @@
         android:shortcutDisabledMessage="@string/book_status_started"
         tools:ignore="UnusedAttribute">
         <intent
-            android:action="com.quaap.bookymcbookface.SHOW_OPEN_BOOKS"
-            android:targetPackage="com.quaap.bookymcbookface"
+            android:action="com.frugs.yomo.SHOW_OPEN_BOOKS"
+            android:targetPackage="com.frugs.yomo"
             android:targetClass="com.frugs.yomo.BookListActivity">
 
         </intent>
@@ -25,8 +25,8 @@
         android:shortcutDisabledMessage="@string/book_status_none"
         tools:ignore="UnusedAttribute">
         <intent
-            android:action="com.quaap.bookymcbookface.SHOW_UNREAD_BOOKS"
-            android:targetPackage="com.quaap.bookymcbookface"
+            android:action="com.frugs.yomo.SHOW_UNREAD_BOOKS"
+            android:targetPackage="com.frugs.yomo"
             android:targetClass="com.frugs.yomo.BookListActivity">
 
         </intent>

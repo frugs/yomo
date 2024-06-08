@@ -18,6 +18,10 @@
         android:title="@string/search_your_books" />
 
     <item
+        android:id="@+id/menu_open_syosetu"
+        android:title="@string/open_syosetu" />
+
+    <item
         android:id="@+id/menu_get_books"
         android:title="@string/find_books_online" />
 

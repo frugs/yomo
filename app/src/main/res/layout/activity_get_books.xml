@@ -34,6 +34,7 @@
     </ScrollView>
 
     <LinearLayout
+        android:baselineAligned="false"
         android:id="@+id/web_add_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -59,6 +60,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:ems="10"
+                android:importantForAutofill="no"
                 android:inputType="textPersonName" />
         </LinearLayout>
 
@@ -80,6 +82,7 @@
                 android:layout_height="match_parent"
                 android:ems="10"
                 android:hint="@string/web_url_hint"
+                android:importantForAutofill="no"
                 android:inputType="textUri" />
         </LinearLayout>
 
