@@ -30,6 +30,7 @@ import android.view.WindowManager;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.ImageButton;
@@ -38,7 +39,6 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.core.content.res.ResourcesCompat;
 
 import com.frugs.yomo.book.Book;
@@ -814,7 +814,7 @@ public class ReaderActivity extends Activity {
                                             lastCol = col;
                                             int color = Color.argb(255, col + 15, col + 10, (int) (col + Math.min(lux / luxThreshold * 10, 10)));
 
-                                            applyColor(color);
+                                            applyColor(color, Color.BLACK);
                                         }
                                     } catch (Throwable t) {
                                         Log.e(TAG, t.getMessage(), t);
@@ -945,8 +945,8 @@ public class ReaderActivity extends Activity {
 
     private void restoreBgColor() {
         if (book != null && book.hasDataDir()) {
-            int bgcolor = book.getBackgroundColor();
-            switch (bgcolor) {
+            int bgColor = book.getBackgroundColor();
+            switch (bgColor) {
                 case Color.TRANSPARENT:
                     listenLight();
                     break;
@@ -958,54 +958,52 @@ public class ReaderActivity extends Activity {
                     break;
                 default:
                     unlistenLight();
-                    applyColor(bgcolor);
+                    applyColor(bgColor, Color.BLACK);
             }
         }
     }
 
-    private void applyColor(int color) {
-        applyColor(color, false);
-    }
-
     private void resetColor() {
-        applyColor(Color.parseColor("#FF31363F"));
+        applyColor(
+                Color.parseColor("#FF31363F"),
+                Color.parseColor("#FFEEEEEE"));
     }
 
     @SuppressLint("SetJavaScriptEnabled")
-    private void applyColor(int color, boolean controlsonly) {
-        currentDimColor = color;
+    private void applyColor(int bgColor, int fgColor) {
+        currentDimColor = bgColor;
         try {
 
             ViewGroup controls = findViewById(R.id.controls_layout);
-            setDimLevel(controls, color);
+            setDimLevel(controls, bgColor, fgColor);
             for (int i = 0; i < controls.getChildCount(); i++) {
                 View button = controls.getChildAt(i);
-                setDimLevel(button, color);
+                setDimLevel(button, bgColor, fgColor);
             }
 
-//            ViewGroup extracontrols = findViewById(R.id.slide_menu);
-//            for (int i = 0; i < extracontrols.getChildCount(); i++) {
-//                View button = extracontrols.getChildAt(i);
-//                setDimLevel(button, color);
-//            }
+            ViewGroup extraControls = findViewById(R.id.slide_menu);
+            for (int i = 0; i < extraControls.getChildCount(); i++) {
+                View button = extraControls.getChildAt(i);
+                setDimLevel(button, bgColor, fgColor);
+            }
 
             ReaderActivity.this.getWindow().setBackgroundDrawable(null);
-            webView.setBackgroundColor(color);
-            ReaderActivity.this.getWindow().setBackgroundDrawable(new ColorDrawable(color));
+            webView.setBackgroundColor(bgColor);
+            ReaderActivity.this.getWindow().setBackgroundDrawable(new ColorDrawable(bgColor));
 
-            if (!controlsonly) {
-                //Log.d("GG", String.format("#%6X", color & 0xFFFFFF));
-                webView.getSettings().setJavaScriptEnabled(true);
-                webView.evaluateJavascript("(function(){var newSS, styles='* { background: " + String.format("#%6X", color & 0xFFFFFF) + " ! important; color: #EEEEEE !important } :link, :link * { color: #000088 !important } :visited, :visited * { color: #44097A !important }'; if(document.createStyleSheet) {document.createStyleSheet(\"javascript:'\"+styles+\"'\");} else { newSS=document.createElement('link'); newSS.rel='stylesheet'; newSS.href='data:text/css,'+escape(styles); document.getElementsByTagName(\"head\")[0].appendChild(newSS); } })();", null);
-                webView.getSettings().setJavaScriptEnabled(false);
-            }
+            Log.d("bgCssColorCode", String.format("#%6X", bgColor & 0xFFFFFF));
+            Log.d("fgCssColorCode", String.format("#%6X", fgColor & 0xFFFFFF));
+            webView.getSettings().setJavaScriptEnabled(true);
+            webView.evaluateJavascript("(function(){var newSS, styles='* { background: " + String.format("#%6X", bgColor & 0xFFFFFF) + " ! important; color: " + String.format("#%6X", fgColor & 0xFFFFFF) + " !important } :link, :link * { color: #000088 !important } :visited, :visited * { color: #44097A !important }'; if(document.createStyleSheet) {document.createStyleSheet(\"javascript:'\"+styles+\"'\");} else { newSS=document.createElement('link'); newSS.rel='stylesheet'; newSS.href='data:text/css,'+escape(styles); document.getElementsByTagName(\"head\")[0].appendChild(newSS); } })();", null);
+            webView.getSettings().setJavaScriptEnabled(false);
+
         } catch (Throwable t) {
             Log.e(TAG, t.getMessage(), t);
             Toast.makeText(this, t.getLocalizedMessage(), Toast.LENGTH_LONG).show();
         }
     }
 
-    private void setDimLevel(View button, int color) {
+    private void setDimLevel(View view, int bgColor, int fgColor) {
         try {
             Drawable btnDrawable = ResourcesCompat.getDrawable(
                     getResources(),
@@ -1014,14 +1012,18 @@ public class ReaderActivity extends Activity {
 
             if (btnDrawable != null) {
                 Drawable mutDrawable = btnDrawable.mutate();
-                mutDrawable.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
-                button.setBackground(mutDrawable);
+                mutDrawable.setColorFilter(bgColor, PorterDuff.Mode.MULTIPLY);
+                view.setBackground(mutDrawable);
             } else {
-                button.setBackground(null);
+                view.setBackground(null);
             }
 
-            if (button instanceof ImageButton) {
-                ((ImageButton) button).getDrawable().mutate().setColorFilter(color, PorterDuff.Mode.MULTIPLY);
+            if (view instanceof ImageButton imageButton) {
+                imageButton.getDrawable().mutate().setColorFilter(fgColor, PorterDuff.Mode.MULTIPLY);
+            }
+
+            if (view instanceof Button button) {
+                button.setTextColor(fgColor);
             }
         } catch (Throwable t) {
             Log.e(TAG, t.getMessage(), t);
