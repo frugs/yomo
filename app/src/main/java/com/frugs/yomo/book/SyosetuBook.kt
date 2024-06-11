@@ -20,6 +20,10 @@ class SyosetuBook(context: Context?) : Book(context) {
         private val TOC_LABEL = "toc.label."
         private val TOC_CONTENT = "toc.content."
         private val TOC = "toc"
+
+        private fun getOrderFileName(order: Int): String  {
+            return "${ORDER}${order}.html"
+        }
     }
 
     private val docFileOrder: MutableList<String> = ArrayList()
@@ -42,25 +46,32 @@ class SyosetuBook(context: Context?) : Book(context) {
 
     @Throws(IOException::class)
     override fun load() {
-        val syosetuService = BookyApp.getSyosetuService(context)
+        runBlocking {
+            val syosetuService = BookyApp.getSyosetuService(context)
 
-        if (!sharedPreferences.contains(ORDERCOUNT)) {
-            runBlocking {
+            if (!sharedPreferences.contains(ORDERCOUNT)) {
                 val details = syosetuService.getDetails(ncode)
-                val text = syosetuService.getText(ncode, 1)
+                val pages = details?.pages ?: 1
+                for (i in 1..pages) {
+                    val text = syosetuService.getText(ncode, i)
+                    val orderFileName = getOrderFileName(i)
 
-                val outFile = File(thisBookDir, "${ORDER}1.html")
-                if (!outFile.exists()) {
-                    outFile.writeText(text)
+                    val outFile = File(thisBookDir, orderFileName)
+                    if (!outFile.exists()) {
+                        outFile.writeText(text)
+                    }
                 }
 
                 val bookData = sharedPreferences.edit()
-                bookData.putInt(ORDERCOUNT, details?.pages ?: 1)
+                bookData.putInt(ORDERCOUNT, pages)
                 bookData.apply()
             }
-        }
 
-        docFileOrder.add("${ORDER}1.html")
+            val pages = sharedPreferences.getInt(ORDERCOUNT, 1)
+            for (i in 1..pages) {
+                docFileOrder.add(getOrderFileName(i))
+            }
+        }
     }
 
     override fun getToc(): Map<String, String>? {

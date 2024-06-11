@@ -122,8 +122,8 @@ public class ReaderActivity extends Activity {
 
         webView = findViewById(R.id.page_view);
 
-        webView.getSettings().setDefaultFontSize(18);
-        webView.getSettings().setDefaultFixedFontSize(18);
+        webView.getSettings().setDefaultFontSize(16);
+        webView.getSettings().setDefaultFixedFontSize(16);
         webView.getSettings().setAllowFileAccess(true);
 
         webView.setNetworkAvailable(false);
@@ -956,7 +956,7 @@ public class ReaderActivity extends Activity {
 
         MenuItem norm = bmenu.getMenu().add(R.string.book_default);
 
-        if (bg==Integer.MAX_VALUE) {
+        if (bg == Integer.MAX_VALUE) {
             norm.setCheckable(true);
             norm.setChecked(true);
         }
@@ -1034,7 +1034,7 @@ public class ReaderActivity extends Activity {
     }
 
     private void restoreBgColor() {
-        if (book!=null && book.hasDataDir()) {
+        if (book != null && book.hasDataDir()) {
             int bgcolor = book.getBackgroundColor();
             switch (bgcolor) {
                 case Color.TRANSPARENT:
@@ -1058,7 +1058,7 @@ public class ReaderActivity extends Activity {
     }
 
     private void resetColor() {
-        applyColor(Color.argb(255,245,245,245), true);
+        applyColor(Color.parseColor("#FF31363F"));
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -1086,7 +1086,7 @@ public class ReaderActivity extends Activity {
             if (!controlsonly) {
                 //Log.d("GG", String.format("#%6X", color & 0xFFFFFF));
                 webView.getSettings().setJavaScriptEnabled(true);
-                webView.evaluateJavascript("(function(){var newSS, styles='* { background: " + String.format("#%6X", color & 0xFFFFFF) + " ! important; color: black !important } :link, :link * { color: #000088 !important } :visited, :visited * { color: #44097A !important }'; if(document.createStyleSheet) {document.createStyleSheet(\"javascript:'\"+styles+\"'\");} else { newSS=document.createElement('link'); newSS.rel='stylesheet'; newSS.href='data:text/css,'+escape(styles); document.getElementsByTagName(\"head\")[0].appendChild(newSS); } })();", null);
+                webView.evaluateJavascript("(function(){var newSS, styles='* { background: " + String.format("#%6X", color & 0xFFFFFF) + " ! important; color: #EEEEEE !important } :link, :link * { color: #000088 !important } :visited, :visited * { color: #44097A !important }'; if(document.createStyleSheet) {document.createStyleSheet(\"javascript:'\"+styles+\"'\");} else { newSS=document.createElement('link'); newSS.rel='stylesheet'; newSS.href='data:text/css,'+escape(styles); document.getElementsByTagName(\"head\")[0].appendChild(newSS); } })();", null);
                 webView.getSettings().setJavaScriptEnabled(false);
             }
         } catch (Throwable t) {
