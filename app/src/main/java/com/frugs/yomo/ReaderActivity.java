@@ -16,11 +16,11 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.Display;
+import android.view.GestureDetector;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
@@ -37,7 +37,11 @@ import android.widget.PopupMenu;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import androidx.annotation.RequiresApi;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.content.res.ResourcesCompat;
+
+import com.frugs.yomo.book.Book;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -45,8 +49,6 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import com.frugs.yomo.book.Book;
 
 /**
  * Copyright (C) 2017   Tom Kliethermes
@@ -72,10 +74,6 @@ public class ReaderActivity extends Activity {
     private WebView webView;
 
     public static final String FILENAME = "filename";
-    public static final String SCREEN_PAGING = "screenpaging";
-    public static final String DRAG_SCROLL= "dragscroll";
-
-
 
     private final Object timerSync = new Object();
     private Timer timer;
@@ -128,90 +126,45 @@ public class ReaderActivity extends Activity {
 
         webView.setNetworkAvailable(false);
 
-        final boolean drag_scroll = intent.getBooleanExtra(DRAG_SCROLL,true);
+        webView.setOnTouchListener(new View.OnTouchListener() {
+            private final GestureDetector gestureDetector = new GestureDetector(
+                    ReaderActivity.this,
+                    new GestureDetector.OnGestureListener() {
+                @Override
+                public boolean onDown(@NonNull MotionEvent e) {
+                    return false;
+                }
 
-        if (intent.getBooleanExtra(SCREEN_PAGING,true)) webView.setOnTouchListener(new View.OnTouchListener() {
-            float x,y;
-            long time;
-            final long TIMEALLOWED = 300;
-            final int MINSWIPE = 150;
-            @Override
-            public boolean onTouch(View view, MotionEvent motionEvent) {
-                float diffx = 0;
-                float diffy = 0;
-
-                switch (motionEvent.getAction()) {
-
-                    case MotionEvent.ACTION_UP:
-
-                        if (drag_scroll) cancelScrollTask();
-                        //Log.d("TIME", "t " + (System.currentTimeMillis() - time));
-                        if (System.currentTimeMillis() - time >TIMEALLOWED) return false;
-
-                        diffx = motionEvent.getX() - x;
-                        diffy = motionEvent.getY() - y;
-                        float absdiffx = Math.abs(diffx);
-                        float absdiffy = Math.abs(diffy);
-
-
-                        if ((absdiffx>absdiffy && diffx>MINSWIPE) || (absdiffy>absdiffx && diffy>MINSWIPE)) {
-                            prevPage();
-                        } else if ((absdiffx>absdiffy && diffx<-MINSWIPE) || (absdiffy>absdiffx && diffy<-MINSWIPE)) {
-                            nextPage();
-                        } else {
-                            return false;
-                        }
-
-
-                    case MotionEvent.ACTION_DOWN:
-                        if (drag_scroll) cancelScrollTask();
-                        x = motionEvent.getX();
-                        y = motionEvent.getY();
-                        time = System.currentTimeMillis();
-                        setAwake();
-                        if (y>mScreenDim.y/3 && x>mScreenDim.x/3 &&
-                                y<mScreenDim.y*2/3 && x<mScreenDim.x*2/3) {
-                            mkFull();
-                            hideMenu();
-
-                            if (currentDimColor!=Color.TRANSPARENT) {
-                                setDimLevel(showMore, Color.LTGRAY);
-                                handler.postDelayed(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        setDimLevel(showMore, currentDimColor);
-                                    }
-                                }, 2000);
-                            }
-                        }
-                        return false;
-
-                    case MotionEvent.ACTION_MOVE:
-
-                        if (drag_scroll) {
-                            diffy = motionEvent.getY() - y;
-
-                            if (Math.abs(diffy) > 30) {
-                                if (System.currentTimeMillis() - time > TIMEALLOWED * 1.5) {
-                                    scrollDir = (int) ((-diffy / webView.getHeight()) * webView.getSettings().getDefaultFontSize() * 5);
-                                    startScrollTask();
-                                    webView.clearMatches();
-                                }
-                            } else {
-                                cancelScrollTask();
-                            }
-                        }
-
-                        return true;
+                @Override
+                public void onShowPress(@NonNull MotionEvent e) {
 
                 }
 
+                @Override
+                public boolean onSingleTapUp(@NonNull MotionEvent e) {
+                    return false;
+                }
 
-                return true;
+                @Override
+                public boolean onScroll(@Nullable MotionEvent e1, @NonNull MotionEvent e2, float distanceX, float distanceY) {
+                    return false;
+                }
+
+                @Override
+                public void onLongPress(@NonNull MotionEvent e) {
+
+                }
+
+                @Override
+                public boolean onFling(@Nullable MotionEvent e1, @NonNull MotionEvent e2, float velocityX, float velocityY) {
+                    return false;
+                }
+            });
+
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                return gestureDetector.onTouchEvent(motionEvent);
             }
-
-
-
         });
 
         webView.setWebViewClient(new WebViewClient() {
@@ -426,45 +379,20 @@ public class ReaderActivity extends Activity {
         }
     }
 
-    private boolean isPagingDown;
-    private boolean isPagingUp;
-
     private void prevPage() {
-        isPagingDown = false;
-        if(webView.canScrollVertically(-1)) {
-            webView.pageUp(false);
-            //webView.scrollBy(0,-webView.getHeight()-14);
-        } else {
-            isPagingUp = true;
+        if (book != null) {
             showUri(book.getPreviousSection());
         }
-        //saveScrollOffsetDelayed(1500);
-        hideMenu();
 
+        hideMenu();
     }
 
     private void nextPage() {
-        isPagingUp = false;
-        if(webView.canScrollVertically(1)) {
-            webView.pageDown(false);
-            //webView.scrollBy(0,webView.getHeight()-14);
-        } else {
-            isPagingDown = true;
-            if (book!=null) showUri(book.getNextSection());
-
-
+        if (book != null) {
+            showUri(book.getNextSection());
         }
-        //saveScrollOffsetDelayed(1500);
-        hideMenu();
-    }
 
-    private void saveScrollOffsetDelayed(int delay) {
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                saveScrollOffset();
-            }
-        }, delay);
+        hideMenu();
     }
 
     private void saveScrollOffset() {
@@ -478,29 +406,18 @@ public class ReaderActivity extends Activity {
     }
 
     private void restoreScrollOffsetDelayed(int delay) {
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                restoreScrollOffset();
+        handler.postDelayed(() -> {
+            if (book == null) {
+                return;
+            }
+
+            int spos = book.getSectionOffset();
+            webView.computeScroll();
+            if (spos >= 0) {
+                webView.scrollTo(0, spos);
+                Log.d(TAG, "restoreScrollOffset " + spos);
             }
         }, delay);
-    }
-
-    private void restoreScrollOffset() {
-        if (book==null) return;
-        int spos = book.getSectionOffset();
-        webView.computeScroll();
-        if (spos>=0) {
-            webView.scrollTo(0, spos);
-            Log.d(TAG, "restoreScrollOffset " + spos);
-        } else if (isPagingUp){
-            webView.pageDown(true);
-            //webView.scrollTo(0,webView.getContentHeight());
-        } else if (isPagingDown){
-            webView.pageUp(true);
-        }
-        isPagingUp = false;
-        isPagingDown = false;
     }
 
     private void loadFile(File file) {
@@ -744,7 +661,7 @@ public class ReaderActivity extends Activity {
             }
         }
 
-        if (exception==null) {
+        if (exception == null) {
             try {
                 saveScrollOffset();
             } catch (Throwable t) {
@@ -1097,15 +1014,19 @@ public class ReaderActivity extends Activity {
 
     private void setDimLevel(View button, int color) {
         try {
-            button.setBackground(null);
-            Drawable btn = null;
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-                btn = getResources().getDrawable(android.R.drawable.btn_default, null).mutate();
+            Drawable btnDrawable = ResourcesCompat.getDrawable(
+                    getResources(),
+                    android.R.drawable.btn_default,
+                    null);
+
+            if (btnDrawable != null) {
+                Drawable mutDrawable = btnDrawable.mutate();
+                mutDrawable.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
+                button.setBackground(mutDrawable);
             } else {
-                btn = getResources().getDrawable(android.R.drawable.btn_default).mutate();
+                button.setBackground(null);
             }
-            btn.setColorFilter(color, PorterDuff.Mode.MULTIPLY);
-            button.setBackground(btn);
+
             if (button instanceof ImageButton) {
                 ((ImageButton) button).getDrawable().mutate().setColorFilter(color, PorterDuff.Mode.MULTIPLY);
             }

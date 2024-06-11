@@ -132,7 +132,7 @@ public abstract class Book {
     }
 
     public int getSectionOffset() {
-        if (data==null) {
+        if (data == null) {
             return 0;
         }
         return data.getInt(SECTION_ID_OFFSET, -1);
