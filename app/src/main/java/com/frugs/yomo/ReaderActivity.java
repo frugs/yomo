@@ -129,37 +129,24 @@ public class ReaderActivity extends Activity {
         webView.setOnTouchListener(new View.OnTouchListener() {
             private final GestureDetector gestureDetector = new GestureDetector(
                     ReaderActivity.this,
-                    new GestureDetector.OnGestureListener() {
-                @Override
-                public boolean onDown(@NonNull MotionEvent e) {
-                    return false;
-                }
+                    new GestureDetector.SimpleOnGestureListener() {
+                        @Override
+                        public boolean onDoubleTap(@NonNull MotionEvent e) {
+                            showMenu();
+                            return true;
+                        }
 
-                @Override
-                public void onShowPress(@NonNull MotionEvent e) {
+                        @Override
+                        public boolean onSingleTapConfirmed(@NonNull MotionEvent e) {
+                            View slideMenuView = findViewById(R.id.slide_menu);
+                            if (slideMenuView != null && slideMenuView.getVisibility() == View.VISIBLE) {
+                                hideMenu();
+                                return true;
+                            }
 
-                }
-
-                @Override
-                public boolean onSingleTapUp(@NonNull MotionEvent e) {
-                    return false;
-                }
-
-                @Override
-                public boolean onScroll(@Nullable MotionEvent e1, @NonNull MotionEvent e2, float distanceX, float distanceY) {
-                    return false;
-                }
-
-                @Override
-                public void onLongPress(@NonNull MotionEvent e) {
-
-                }
-
-                @Override
-                public boolean onFling(@Nullable MotionEvent e1, @NonNull MotionEvent e2, float velocityX, float velocityY) {
-                    return false;
-                }
-            });
+                            return false;
+                        }
+                    });
 
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
@@ -293,6 +280,12 @@ public class ReaderActivity extends Activity {
 
     @Override
     public void onBackPressed() {
+        View slideMenuView = findViewById(R.id.slide_menu);
+        if (slideMenuView != null && slideMenuView.getVisibility() == View.VISIBLE) {
+            hideMenu();
+            return;
+        }
+
         finish();
         Intent main = new Intent(this, BookListActivity.class);
         main.setAction(BookListActivity.ACTION_SHOW_LAST_STATUS);
