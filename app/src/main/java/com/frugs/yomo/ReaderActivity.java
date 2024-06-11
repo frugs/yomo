@@ -328,6 +328,7 @@ public class ReaderActivity extends Activity {
         v.setVisibility(View.VISIBLE);
         findViewById(R.id.control_view_more).setVisibility(View.GONE);
         findViewById(R.id.control_view_less).setVisibility(View.VISIBLE);
+        findViewById(R.id.controls_layout).setVisibility(View.VISIBLE);
         mkReg();
     }
 
@@ -336,6 +337,7 @@ public class ReaderActivity extends Activity {
         v.setVisibility(View.GONE);
         findViewById(R.id.control_view_more).setVisibility(View.VISIBLE);
         findViewById(R.id.control_view_less).setVisibility(View.GONE);
+        findViewById(R.id.controls_layout).setVisibility(View.GONE);
         mkFull();
     }
 
@@ -604,7 +606,7 @@ public class ReaderActivity extends Activity {
 
     private void mkFull() {
 
-        if (book==null || !book.getFlag(FULLSCREEN, true)) return;
+        if (book == null || !book.getFlag(FULLSCREEN, true)) return;
 //        findViewById(R.id.fullscreen_no_button).setVisibility(View.VISIBLE);
 //        findViewById(R.id.fullscreen_button).setVisibility(View.GONE);
 
