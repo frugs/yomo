@@ -13,7 +13,6 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import org.jsoup.Jsoup
-import java.io.IOException
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.regex.Pattern
@@ -56,9 +55,10 @@ class SyosetuService(context: Context) {
     suspend fun getText(ncode: String, page: Int): String {
         return withContext(Dispatchers.IO) {
             val doc = Jsoup.connect("https://ncode.syosetu.com/$ncode/$page/").get()
-            val element = doc.selectFirst("div#novel_honbun.novel_view") ?: return@withContext ""
+            val pageTitle = doc.selectFirst("p.novel_subtitle")?.text() ?: ""
+            val mainTextHtml = doc.selectFirst("div#novel_honbun.novel_view")?.html() ?: ""
 
-            return@withContext element.html()
+            return@withContext "<h3>${pageTitle}</h3><br>${mainTextHtml}"
         }
     }
 
