@@ -54,14 +54,20 @@ class SyosetuService(context: Context) {
 
     suspend fun getText(ncode: String, page: Int): String {
         return withContext(Dispatchers.IO) {
-            val doc = Jsoup.connect("https://ncode.syosetu.com/$ncode/$page/").get()
+            val response = Jsoup.connect("https://ncode.syosetu.com/$ncode/$page/").execute()
+            return@withContext parseText(response.body())
+        }
+    }
+
+    private suspend fun parseText(html: String): String {
+        return withContext(Dispatchers.IO) {
+            val doc = Jsoup.parse(html)
             val pageTitle = doc.selectFirst("p.novel_subtitle")?.text() ?: ""
             val mainTextHtml = doc.selectFirst("div#novel_honbun.novel_view")?.html() ?: ""
 
             return@withContext "<h3>${pageTitle}</h3><br>${mainTextHtml}"
         }
     }
-
 
     @SuppressLint("SimpleDateFormat")
     private fun parseSyosetuDetails(response: JSONArray?): SyosetuDetails? {
