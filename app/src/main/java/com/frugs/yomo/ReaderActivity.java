@@ -39,6 +39,7 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.content.res.ResourcesCompat;
 
 import com.frugs.yomo.book.Book;
@@ -68,6 +69,8 @@ public class ReaderActivity extends Activity {
     private static final String TAG = "ReaderActivity";
     public static final String READEREXITEDNORMALLY = "readerexitednormally";
     private static final String FULLSCREEN = "fullscreen";
+
+    private static final float FLING_THRESHOLD = 0.01f;
 
     private Book book;
 
@@ -141,6 +144,24 @@ public class ReaderActivity extends Activity {
                             View slideMenuView = findViewById(R.id.slide_menu);
                             if (slideMenuView != null && slideMenuView.getVisibility() == View.VISIBLE) {
                                 hideMenu();
+                                return true;
+                            }
+
+                            return false;
+                        }
+
+                        @Override
+                        public boolean onFling(@Nullable MotionEvent e1, @NonNull MotionEvent e2, float velocityX, float velocityY) {
+                            if (Math.abs(velocityX) < 2 * Math.abs(velocityY)) {
+                                // ignore flings that aren't primarily horizontal
+                                return false;
+                            }
+
+                            if (velocityX >= FLING_THRESHOLD) {
+                                prevPage();
+                                return true;
+                            } else if (velocityX <= -FLING_THRESHOLD) {
+                                nextPage();
                                 return true;
                             }
 
