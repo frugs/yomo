@@ -7,6 +7,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.database.DefaultDatabaseProvider
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
+import androidx.media3.datasource.cache.NoOpCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.offline.Download
 import androidx.media3.exoplayer.offline.DownloadManager
@@ -32,13 +33,16 @@ class SyosetuDownloadService : DownloadService(FOREGROUND_NOTIFICATION_ID,
     val databaseProvider = DefaultDatabaseProvider(BookyApp.getDB(this))
     val cache = SimpleCache(
         File(cacheDir, "downloads"),
-        LeastRecentlyUsedCacheEvictor(CACHE_SIZE_BYTES),
+        NoOpCacheEvictor(),
         databaseProvider)
-    return DownloadManager(this,
+    val downloadManager = DownloadManager(this,
         databaseProvider,
         cache,
         DefaultHttpDataSource.Factory(),
         Executors.newCachedThreadPool())
+    downloadManager.requirements = Requirements(Requirements.NETWORK)
+    downloadManager.maxParallelDownloads = 5
+    return downloadManager
   }
 
   override fun getScheduler(): Scheduler = PlatformScheduler(this, JOB_ID)
@@ -61,7 +65,6 @@ class SyosetuDownloadService : DownloadService(FOREGROUND_NOTIFICATION_ID,
   }
 
   companion object {
-    private const val CACHE_SIZE_BYTES: Long = 200 * 1024 * 1024
     private const val CHANNEL_ID = "download_channel"
     private const val FOREGROUND_NOTIFICATION_ID = 1
     private const val JOB_ID = 1
