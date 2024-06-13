@@ -28,42 +28,42 @@ class SyosetuDownloadService : DownloadService(FOREGROUND_NOTIFICATION_ID,
     R.string.download_notification_channel_name,
     R.string.download_notification_channel_description) {
 
-    override fun getDownloadManager(): DownloadManager {
-        val databaseProvider = DefaultDatabaseProvider(BookyApp.getDB(this))
-        val cache = SimpleCache(
-            File(cacheDir, "downloads"),
-            LeastRecentlyUsedCacheEvictor(CACHE_SIZE_BYTES),
-            databaseProvider)
-        return DownloadManager(this,
-            databaseProvider,
-            cache,
-            DefaultHttpDataSource.Factory(),
-            Executors.newCachedThreadPool())
-    }
+  override fun getDownloadManager(): DownloadManager {
+    val databaseProvider = DefaultDatabaseProvider(BookyApp.getDB(this))
+    val cache = SimpleCache(
+        File(cacheDir, "downloads"),
+        LeastRecentlyUsedCacheEvictor(CACHE_SIZE_BYTES),
+        databaseProvider)
+    return DownloadManager(this,
+        databaseProvider,
+        cache,
+        DefaultHttpDataSource.Factory(),
+        Executors.newCachedThreadPool())
+  }
 
-    override fun getScheduler(): Scheduler = PlatformScheduler(this, JOB_ID)
+  override fun getScheduler(): Scheduler = PlatformScheduler(this, JOB_ID)
 
-    override fun getForegroundNotification(
-            downloads: List<Download>,
-            notMetRequirements: Int): Notification {
-        val downloadNotificationHelper = DownloadNotificationHelper(this, CHANNEL_ID)
+  override fun getForegroundNotification(
+      downloads: List<Download>,
+      notMetRequirements: Int): Notification {
+    val downloadNotificationHelper = DownloadNotificationHelper(this, CHANNEL_ID)
 
-        return downloadNotificationHelper.buildProgressNotification(
-            this,
-            R.drawable.ic_stat_file_download,
-            PendingIntent.getActivity(this,
-                0,
-                Intent(this, BookListActivity::class.java),
-                PendingIntent.FLAG_UPDATE_CURRENT),
-            "Downloading...",
-            downloads,
-            Requirements.NETWORK)
-    }
+    return downloadNotificationHelper.buildProgressNotification(
+        this,
+        R.drawable.ic_stat_file_download,
+        PendingIntent.getActivity(this,
+            0,
+            Intent(this, BookListActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT),
+        "Downloading...",
+        downloads,
+        Requirements.NETWORK)
+  }
 
-    companion object {
-        private const val CACHE_SIZE_BYTES: Long = 200 * 1024 * 1024
-        private const val CHANNEL_ID = "download_channel"
-        private const val FOREGROUND_NOTIFICATION_ID = 1
-        private const val JOB_ID = 1
-    }
+  companion object {
+    private const val CACHE_SIZE_BYTES: Long = 200 * 1024 * 1024
+    private const val CHANNEL_ID = "download_channel"
+    private const val FOREGROUND_NOTIFICATION_ID = 1
+    private const val JOB_ID = 1
+  }
 }

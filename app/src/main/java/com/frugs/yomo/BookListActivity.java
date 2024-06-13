@@ -57,12 +57,12 @@ import java.util.List;
 
 /**
  * Copyright (C) 2017   Tom Kliethermes
- *
+ * <p>
  * This file is part of BookyMcBookface and is is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published by the
  * Free Software Foundation; either version 3 of the License, or (at your option) any
  * later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -129,7 +129,7 @@ public class BookListActivity extends AppCompatActivity {
         bookAdapter.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                readBook((int)view.getTag());
+                readBook((int) view.getTag());
             }
         });
         bookAdapter.setOnLongClickListener(new View.OnLongClickListener() {
@@ -149,7 +149,9 @@ public class BookListActivity extends AppCompatActivity {
         //Log.d("BOOKLIST", "onCreate end");
     }
 
-    /** Start the download service if it should be running but it's not currently. */
+    /**
+     * Start the download service if it should be running but it's not currently.
+     */
     @OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
     private void startDownloadService() {
         // Starting the service in the foreground causes notification flicker if there is no scheduled
@@ -199,14 +201,16 @@ public class BookListActivity extends AppCompatActivity {
             }
         }
 
-        if (!hadSpecialOpen){
+        if (!hadSpecialOpen) {
 
             switch (data.getInt(STARTWITH_KEY, STARTLASTREAD)) {
                 case STARTLASTREAD:
-                    if (recentread!=-1 && data.getBoolean(ReaderActivity.READEREXITEDNORMALLY, true)) openLastread = true;
+                    if (recentread != -1 && data.getBoolean(ReaderActivity.READEREXITEDNORMALLY, true))
+                        openLastread = true;
                     break;
                 case STARTOPEN:
-                    showStatus = BookDb.STATUS_STARTED; break;
+                    showStatus = BookDb.STATUS_STARTED;
+                    break;
                 case STARTALL:
                     showStatus = BookDb.STATUS_ANY;
             }
@@ -240,7 +244,7 @@ public class BookListActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        if (showingSearch || showStatus!=BookDb.STATUS_ANY) {
+        if (showingSearch || showStatus != BookDb.STATUS_ANY) {
             setTitle(R.string.app_name);
             populateBooks();
             showingSearch = false;
@@ -250,7 +254,7 @@ public class BookListActivity extends AppCompatActivity {
     }
 
     private void setSortOrder(SortOrder sortOrder) {
-        data.edit().putString(SORTORDER_KEY,sortOrder.name()).apply();
+        data.edit().putString(SORTORDER_KEY, sortOrder.name()).apply();
     }
 
     @NonNull
@@ -277,7 +281,7 @@ public class BookListActivity extends AppCompatActivity {
         int title = R.string.app_name;
         switch (status) {
             case BookDb.STATUS_SEARCH:
-                String lastSearch = data.getString("__LAST_SEARCH_STR__","");
+                String lastSearch = data.getString("__LAST_SEARCH_STR__", "");
                 if (!lastSearch.trim().isEmpty()) {
                     boolean stitle = data.getBoolean("__LAST_TITLE__", true);
                     boolean sauthor = data.getBoolean("__LAST_AUTHOR__", true);
@@ -311,7 +315,7 @@ public class BookListActivity extends AppCompatActivity {
 
         SortOrder sortorder = getSortOrder();
         final List<Integer> books = db.getBookIds(sortorder, status);
-        populateBooks(books,  showRecent);
+        populateBooks(books, showRecent);
 
         invalidateOptionsMenu();
     }
@@ -334,7 +338,7 @@ public class BookListActivity extends AppCompatActivity {
             if (recentread >= 0) {
                 //viewAdder.displayBook(recentread);
                 books.remove((Integer) recentread);
-                books.add(0, (Integer)recentread);
+                books.add(0, recentread);
             }
         }
 
@@ -416,7 +420,6 @@ public class BookListActivity extends AppCompatActivity {
     }
 
 
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
 
@@ -484,7 +487,7 @@ public class BookListActivity extends AppCompatActivity {
             viewAdder.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                   populateBooks(statusf);
+                    populateBooks(statusf);
                     invalidateOptionsMenu();
                 }
             }, 120);
@@ -496,10 +499,10 @@ public class BookListActivity extends AppCompatActivity {
 
 
     public static String maxlen(String text, int maxlen) {
-        if (text!=null && text.length() > maxlen) {
-            int minus = text.length()>3?3:0;
+        if (text != null && text.length() > maxlen) {
+            int minus = text.length() > 3 ? 3 : 0;
 
-            return text.substring(0, maxlen-minus) + "...";
+            return text.substring(0, maxlen - minus) + "...";
         }
         return text;
     }
@@ -508,7 +511,7 @@ public class BookListActivity extends AppCompatActivity {
 
         final BookDb.BookRecord book = db.getBookRecord(bookid);
 
-        if (book!=null && book.filename!=null) {
+        if (book != null && book.filename != null) {
             //data.edit().putString(LASTREAD_KEY, BOOK_PREFIX + book.id).apply();
 
             final long now = System.currentTimeMillis();
@@ -519,7 +522,7 @@ public class BookListActivity extends AppCompatActivity {
                 @Override
                 public void run() {
 
-                    getReader(book,true);
+                    getReader(book, true);
 
                 }
             }, 300);
@@ -529,22 +532,16 @@ public class BookListActivity extends AppCompatActivity {
                 try {
 
                     ShortcutManager shortcutManager = (ShortcutManager) getSystemService(Context.SHORTCUT_SERVICE);
-                    if (shortcutManager!=null) {
-                        Intent readBook = getReader(book,false);
+                    if (shortcutManager != null) {
+                        Intent readBook = getReader(book, false);
 
 
-                        ShortcutInfo readShortcut = new ShortcutInfo.Builder(this, "id1")
-                                .setShortLabel(getString(R.string.shortcut_latest))
-                                .setLongLabel(getString(R.string.shortcut_latest_title, maxlen(book.title, 24)))
-                                .setIcon(Icon.createWithResource(BookListActivity.this, R.mipmap.ic_launcher_round))
-                                .setIntent(readBook)
-                                .build();
-
+                        ShortcutInfo readShortcut = new ShortcutInfo.Builder(this, "id1").setShortLabel(getString(R.string.shortcut_latest)).setLongLabel(getString(R.string.shortcut_latest_title, maxlen(book.title, 24))).setIcon(Icon.createWithResource(BookListActivity.this, R.mipmap.ic_launcher_round)).setIntent(readBook).build();
 
 
                         shortcutManager.setDynamicShortcuts(Collections.singletonList(readShortcut));
                     }
-                } catch(Exception e) {
+                } catch (Exception e) {
                     Log.e("Booky", e.getMessage(), e);
                 }
             }
@@ -567,16 +564,16 @@ public class BookListActivity extends AppCompatActivity {
 
     private void removeBook(int bookid, boolean delete) {
         BookDb.BookRecord book = db.getBookRecord(bookid);
-        if (book==null) {
-            Toast.makeText(this, "Bug? The book doesn't seem to be in the database",Toast.LENGTH_LONG).show();
+        if (book == null) {
+            Toast.makeText(this, "Bug? The book doesn't seem to be in the database", Toast.LENGTH_LONG).show();
             return;
         }
-        if (book.filename!=null && book.filename.length()>0) {
+        if (book.filename != null && book.filename.length() > 0) {
             Book.remove(this, new File(book.filename));
         }
         if (delete) {
             db.removeBook(bookid);
-            if (bookAdapter!=null) bookAdapter.notifyItemIdRemoved(bookid);
+            if (bookAdapter != null) bookAdapter.notifyItemIdRemoved(bookid);
         }
 //        else if (status!=BookDb.STATUS_ANY) {
 //            //db.updateLastRead(bookid, -1);
@@ -602,16 +599,16 @@ public class BookListActivity extends AppCompatActivity {
 
             BookMetadata metadata = Book.getBookMetaData(this, filename);
 
-            if (metadata!=null) {
+            if (metadata != null) {
 
                 return db.addBook(filename, metadata.getTitle(), metadata.getAuthor(), dateadded) > -1;
 
             } else if (showToastWarnings) {
-                Toast.makeText(this,getString(R.string.coulndt_add_book, new File(filename).getName()),Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.coulndt_add_book, new File(filename).getName()), Toast.LENGTH_SHORT).show();
             }
 
         } catch (Exception e) {
-            Log.e("BookList", "File: " + filename  + ", " + e.getMessage(), e);
+            Log.e("BookList", "File: " + filename + ", " + e.getMessage(), e);
         }
         return false;
     }
@@ -643,7 +640,7 @@ public class BookListActivity extends AppCompatActivity {
                 }
             });
         }
-        if (added>0) {
+        if (added > 0) {
             tv.setText(getString(R.string.added_numbooks, added));
         } else {
             tv.setText(R.string.loading);
@@ -655,20 +652,20 @@ public class BookListActivity extends AppCompatActivity {
     }
 
 
-    private void addDir( File dir) {
+    private void addDir(File dir) {
 
         viewAdder.showProgress(0);
         new AddDirTask(this, dir).execute(dir);
     }
 
-    private static class AddDirTask extends  AsyncTask<File,Void,Void> {
+    private static class AddDirTask extends AsyncTask<File, Void, Void> {
 
-        int added=0;
+        int added = 0;
         private final WeakReference<BookListActivity> blactref;
         private final File dir;
 
 
-        AddDirTask(BookListActivity blact,  File dir) {
+        AddDirTask(BookListActivity blact, File dir) {
             blactref = new WeakReference<>(blact);
             this.dir = dir;
         }
@@ -676,7 +673,7 @@ public class BookListActivity extends AppCompatActivity {
         @Override
         protected Void doInBackground(File... dirs) {
             BookListActivity blact = blactref.get();
-            if (blact!=null && dirs!=null) {
+            if (blact != null && dirs != null) {
                 long time = System.currentTimeMillis();
                 for (File d : dirs) {
                     try {
@@ -709,7 +706,7 @@ public class BookListActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(Void aVoid) {
             BookListActivity blact = blactref.get();
-            if (blact!=null) {
+            if (blact != null) {
                 blact.viewAdder.hideProgress();
                 Toast.makeText(blact, blact.getString(R.string.books_added, added), Toast.LENGTH_LONG).show();
                 blact.populateBooks();
@@ -719,7 +716,7 @@ public class BookListActivity extends AppCompatActivity {
         @Override
         protected void onCancelled(Void aVoid) {
             BookListActivity blact = blactref.get();
-            if (blact!=null) {
+            if (blact != null) {
                 blact.viewAdder.hideProgress();
             }
             super.onCancelled(aVoid);
@@ -742,7 +739,7 @@ public class BookListActivity extends AppCompatActivity {
 
 
     private void longClickBook(final View view) {
-        final int bookid = (int)view.getTag();
+        final int bookid = (int) view.getTag();
         PopupMenu menu = new PopupMenu(this, view);
         menu.getMenu().add(R.string.open_book).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
             @Override
@@ -755,7 +752,7 @@ public class BookListActivity extends AppCompatActivity {
         final int status = db.getStatus(bookid);
         final long lastread = db.getLastReadTime(bookid);
 
-        if (status!=BookDb.STATUS_DONE) {
+        if (status != BookDb.STATUS_DONE) {
             menu.getMenu().add(R.string.mark_completed).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
                 @Override
                 public boolean onMenuItemClick(MenuItem menuItem) {
@@ -771,7 +768,7 @@ public class BookListActivity extends AppCompatActivity {
             });
         }
 
-        if (status!=BookDb.STATUS_LATER && status!=BookDb.STATUS_DONE) {
+        if (status != BookDb.STATUS_LATER && status != BookDb.STATUS_DONE) {
             menu.getMenu().add(R.string.mark_later).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
                 @Override
                 public boolean onMenuItemClick(MenuItem menuItem) {
@@ -781,19 +778,19 @@ public class BookListActivity extends AppCompatActivity {
             });
         }
 
-        if (status==BookDb.STATUS_LATER || status==BookDb.STATUS_DONE) {
+        if (status == BookDb.STATUS_LATER || status == BookDb.STATUS_DONE) {
             menu.getMenu().add(R.string.un_mark).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
                 @Override
                 public boolean onMenuItemClick(MenuItem menuItem) {
 
-                    updateBookStatus(bookid, view, lastread>0 ? BookDb.STATUS_STARTED : BookDb.STATUS_NONE);
+                    updateBookStatus(bookid, view, lastread > 0 ? BookDb.STATUS_STARTED : BookDb.STATUS_NONE);
                     return false;
                 }
             });
         }
 
 
-        if (status==BookDb.STATUS_STARTED) {
+        if (status == BookDb.STATUS_STARTED) {
 
             menu.getMenu().add(R.string.close_book).setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
                 @Override
@@ -820,17 +817,15 @@ public class BookListActivity extends AppCompatActivity {
 
     private void updateBookStatus(int bookid, View view, int status) {
         db.updateStatus(bookid, status);
-        if (bookAdapter!=null) bookAdapter.notifyItemIdChanged(bookid);
+        if (bookAdapter != null) bookAdapter.notifyItemIdChanged(bookid);
 //        listHolder.removeView(view);
 //        listHolder.addView(view);
- //       updateViewTimes();
+        //       updateViewTimes();
     }
 
     private boolean checkStorageAccess(boolean yay) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                    yay? REQUEST_READ_EXTERNAL_STORAGE : REQUEST_READ_EXTERNAL_STORAGE_NOYAY);
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, yay ? REQUEST_READ_EXTERNAL_STORAGE : REQUEST_READ_EXTERNAL_STORAGE_NOYAY);
             return false;
         }
         return true;
@@ -849,8 +844,7 @@ public class BookListActivity extends AppCompatActivity {
                 yay = false;
             case REQUEST_READ_EXTERNAL_STORAGE:
                 // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
                     if (yay) Toast.makeText(this, "Yay", Toast.LENGTH_LONG).show();
                 } else {
@@ -865,7 +859,7 @@ public class BookListActivity extends AppCompatActivity {
         builder.setTitle(title);
 
         final TextView messageview = new TextView(context);
-        messageview.setPadding(32,8,32,8);
+        messageview.setPadding(32, 8, 32, 8);
 
         final SpannableString s = new SpannableString(message);
         Linkify.addLinks(s, Linkify.ALL);
@@ -895,7 +889,7 @@ public class BookListActivity extends AppCompatActivity {
         View dialogView = inflater.inflate(R.layout.search, null);
         builder.setView(dialogView);
 
-        final EditText editText =  dialogView.findViewById(R.id.search_text);
+        final EditText editText = dialogView.findViewById(R.id.search_text);
         final RadioButton author = dialogView.findViewById(R.id.search_author);
         final RadioButton title = dialogView.findViewById(R.id.search_title);
         final RadioButton authortitle = dialogView.findViewById(R.id.search_authortitle);
@@ -908,11 +902,7 @@ public class BookListActivity extends AppCompatActivity {
                 if (!searchfor.trim().isEmpty()) {
                     boolean stitle = title.isChecked() || authortitle.isChecked();
                     boolean sauthor = author.isChecked() || authortitle.isChecked();
-                    data.edit()
-                            .putString("__LAST_SEARCH_STR__", searchfor)
-                            .putBoolean("__LAST_TITLE__", stitle)
-                            .putBoolean("__LAST_AUTHOR__", sauthor)
-                            .apply();
+                    data.edit().putString("__LAST_SEARCH_STR__", searchfor).putBoolean("__LAST_TITLE__", stitle).putBoolean("__LAST_AUTHOR__", sauthor).apply();
 
                     searchBooks(searchfor, stitle, sauthor);
                 } else {
@@ -930,7 +920,7 @@ public class BookListActivity extends AppCompatActivity {
         title.setChecked(data.getBoolean("__LAST_TITLE__", false));
         author.setChecked(data.getBoolean("__LAST_AUTHOR__", false));
 
-        String lastSearch = data.getString("__LAST_SEARCH_STR__","");
+        String lastSearch = data.getString("__LAST_SEARCH_STR__", "");
         editText.setText(lastSearch);
         editText.setSelection(lastSearch.length());
         editText.setSelection(0, lastSearch.length());
@@ -948,8 +938,7 @@ public class BookListActivity extends AppCompatActivity {
 
             @Override
             public void afterTextChanged(Editable editable) {
-                alertDialog.getButton(DialogInterface.BUTTON_POSITIVE)
-                        .setEnabled(!editText.getText().toString().trim().isEmpty());
+                alertDialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(!editText.getText().toString().trim().isEmpty());
             }
         });
 
@@ -965,9 +954,7 @@ public class BookListActivity extends AppCompatActivity {
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if (event != null && event.getAction() != KeyEvent.ACTION_DOWN) {
                     return false;
-                } else if (actionId == EditorInfo.IME_ACTION_SEARCH
-                        || event == null
-                        || event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
+                } else if (actionId == EditorInfo.IME_ACTION_SEARCH || event == null || event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
                     if (!editText.getText().toString().trim().isEmpty()) {
                         editText.clearFocus();
 
@@ -984,7 +971,7 @@ public class BookListActivity extends AppCompatActivity {
         editText.postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (imm!=null) imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT);
+                if (imm != null) imm.showSoftInput(editText, InputMethodManager.SHOW_IMPLICIT);
             }
         }, 100);
 
@@ -1002,13 +989,14 @@ public class BookListActivity extends AppCompatActivity {
 
 
         void showProgress(int progress) {
-            Message msg=new Message();
+            Message msg = new Message();
             msg.arg1 = BookListAdderHandler.SHOW_PROGRESS;
             msg.arg2 = progress;
             sendMessage(msg);
         }
+
         void hideProgress() {
-            Message msg=new Message();
+            Message msg = new Message();
             msg.arg1 = BookListAdderHandler.HIDE_PROGRESS;
             sendMessage(msg);
         }

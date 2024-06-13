@@ -141,7 +141,7 @@ public class FsTools {
         });
 
         if (extdir.getParent()!=null) {
-            if (drives.keySet().contains(extdir)) {
+            if (drives.containsKey(extdir)) {
                 allfiles.put(null, "← ..");
             } else {
                 allfiles.put(extdir.getParentFile(), "← ..");

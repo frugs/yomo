@@ -175,7 +175,7 @@ public class EpubBook extends Book {
     }
 
 
-    private Map<String,String> metadata = new HashMap<>();
+    private final Map<String,String> metadata = new HashMap<>();
     private final Map<String,String> docFiles = new LinkedHashMap<>();
     private final List<String> docFileOrder = new ArrayList<>();
 

@@ -18,87 +18,87 @@ import java.text.SimpleDateFormat
 import java.util.regex.Pattern
 
 class SyosetuService(context: Context) {
-    companion object {
-        private val pattern = Pattern.compile("https://ncode.syosetu.com/(.*)/.*")
+  companion object {
+    private val pattern = Pattern.compile("https://ncode.syosetu.com/(.*)/.*")
 
-        fun getNcode(url: String): String? {
+    fun getNcode(url: String): String? {
 
-            val matcher = pattern.matcher(url)
-            if (!matcher.matches() || matcher.groupCount() < 1) {
-                return null
-            }
+      val matcher = pattern.matcher(url)
+      if (!matcher.matches() || matcher.groupCount() < 1) {
+        return null
+      }
 
-            return matcher.group(1)
-        }
+      return matcher.group(1)
+    }
+  }
+
+  private val queue = Volley.newRequestQueue(context)
+  private val dateFormat = SimpleDateFormat("yyyy-mm-dd HH:mm:ss")
+
+  suspend fun getDetails(ncode: String): SyosetuDetails? {
+    val url = "https://api.syosetu.com/novelapi/api/?out=json&ncode=$ncode"
+    val future = RequestFuture.newFuture<JSONArray>()
+    val request = JsonArrayRequest(
+        Request.Method.GET,
+        url,
+        null,
+        future,
+        future)
+    queue.add(request)
+
+    return withContext(Dispatchers.IO) {
+      val response = future.get()
+      parseSyosetuDetails(response)
+    }
+  }
+
+  suspend fun getText(ncode: String, page: Int): String {
+    return withContext(Dispatchers.IO) {
+      val response = Jsoup.connect("https://ncode.syosetu.com/$ncode/$page/").execute()
+      return@withContext parseText(response.body())
+    }
+  }
+
+  private suspend fun parseText(html: String): String {
+    return withContext(Dispatchers.IO) {
+      val doc = Jsoup.parse(html)
+      val pageTitle = doc.selectFirst("p.novel_subtitle")?.text() ?: ""
+      val mainTextHtml = doc.selectFirst("div#novel_honbun.novel_view")?.html() ?: ""
+
+      return@withContext "<h3>${pageTitle}</h3><br>${mainTextHtml}"
+    }
+  }
+
+  @SuppressLint("SimpleDateFormat")
+  private fun parseSyosetuDetails(response: JSONArray?): SyosetuDetails? {
+    if (response == null || response.length() < 2) {
+      return null
     }
 
-    private val queue = Volley.newRequestQueue(context)
-    private val dateFormat = SimpleDateFormat("yyyy-mm-dd HH:mm:ss")
+    val jsonObject = response.get(1) as JSONObject?
 
-    suspend fun getDetails(ncode: String): SyosetuDetails? {
-        val url = "https://api.syosetu.com/novelapi/api/?out=json&ncode=$ncode"
-        val future = RequestFuture.newFuture<JSONArray>()
-        val request = JsonArrayRequest(
-                Request.Method.GET,
-                url,
-                null,
-                future,
-                future)
-        queue.add(request)
-
-        return withContext(Dispatchers.IO) {
-            val response = future.get()
-            parseSyosetuDetails(response)
-        }
+    if (jsonObject == null) {
+      return null
     }
 
-    suspend fun getText(ncode: String, page: Int): String {
-        return withContext(Dispatchers.IO) {
-            val response = Jsoup.connect("https://ncode.syosetu.com/$ncode/$page/").execute()
-            return@withContext parseText(response.body())
-        }
+    try {
+      val ncode = jsonObject.getString("ncode")
+      val author = jsonObject.getString("writer")
+      val title = jsonObject.getString("title")
+      val synopsis = jsonObject.getString("story")
+      val pages = jsonObject.getInt("general_all_no")
+      val lastUpdated = jsonObject.getString("general_lastup")
+
+      val lastUpdatedDateTime = dateFormat.parse(lastUpdated)
+
+      return SyosetuDetails(ncode, author, title, synopsis, pages, lastUpdatedDateTime)
+    } catch (e: ParseException) {
+      Log.e(TAG, "Failed to parse syosetu", e)
+      return null
+    } catch (e: RuntimeException) {
+      Log.e(TAG, "Unexpected error parsing syosetu", e)
+      return null
     }
-
-    private suspend fun parseText(html: String): String {
-        return withContext(Dispatchers.IO) {
-            val doc = Jsoup.parse(html)
-            val pageTitle = doc.selectFirst("p.novel_subtitle")?.text() ?: ""
-            val mainTextHtml = doc.selectFirst("div#novel_honbun.novel_view")?.html() ?: ""
-
-            return@withContext "<h3>${pageTitle}</h3><br>${mainTextHtml}"
-        }
-    }
-
-    @SuppressLint("SimpleDateFormat")
-    private fun parseSyosetuDetails(response: JSONArray?): SyosetuDetails? {
-        if (response == null || response.length() < 2) {
-            return null
-        }
-
-        val jsonObject = response.get(1) as JSONObject?
-
-        if (jsonObject == null) {
-            return null
-        }
-
-        try {
-            val ncode =  jsonObject.getString("ncode")
-            val author = jsonObject.getString("writer")
-            val title = jsonObject.getString("title")
-            val synopsis = jsonObject.getString("story")
-            val pages = jsonObject.getInt("general_all_no")
-            val lastUpdated = jsonObject.getString("general_lastup")
-
-            val lastUpdatedDateTime = dateFormat.parse(lastUpdated)
-
-            return SyosetuDetails(ncode, author, title, synopsis, pages, lastUpdatedDateTime)
-        } catch (e: ParseException) {
-            Log.e(TAG, "Failed to parse syosetu", e)
-            return null
-        } catch (e: RuntimeException) {
-            Log.e(TAG, "Unexpected error parsing syosetu", e)
-            return null
-        }
-    }
+  }
 }
 
