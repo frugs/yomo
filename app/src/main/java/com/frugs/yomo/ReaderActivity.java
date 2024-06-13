@@ -6,7 +6,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
-import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
@@ -19,7 +18,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
-import android.view.Display;
 import android.view.GestureDetector;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -32,7 +30,6 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.PopupMenu;
 import android.widget.ProgressBar;
@@ -41,6 +38,8 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.res.ResourcesCompat;
+import androidx.dynamicanimation.animation.DynamicAnimation;
+import androidx.dynamicanimation.animation.FlingAnimation;
 
 import com.frugs.yomo.book.Book;
 
@@ -92,8 +91,6 @@ public class ReaderActivity extends Activity {
 
     private ProgressBar progressBar;
 
-    private Point mScreenDim;
-
     private Throwable exception;
 
     private int currentDimColor = Color.TRANSPARENT;
@@ -108,10 +105,9 @@ public class ReaderActivity extends Activity {
         final Intent intent = getIntent();
 
         ActionBar ab = getActionBar();
-        if (ab!=null) ab.hide();
-        Display display = getWindowManager().getDefaultDisplay();
-        mScreenDim = new Point();
-        display.getSize(mScreenDim);
+        if (ab != null) {
+            ab.hide();
+        }
 
         SensorManager sensorManager = (SensorManager)getSystemService(Context.SENSOR_SERVICE);
         Sensor lightSensor = sensorManager.getDefaultSensor(Sensor.TYPE_LIGHT);
@@ -152,16 +148,28 @@ public class ReaderActivity extends Activity {
 
                         @Override
                         public boolean onFling(@Nullable MotionEvent e1, @NonNull MotionEvent e2, float velocityX, float velocityY) {
+                            if (book == null) {
+                                return false;
+                            }
+
                             if (Math.abs(velocityX) < 2 * Math.abs(velocityY)) {
                                 // ignore flings that aren't primarily horizontal
                                 return false;
                             }
 
-                            if (velocityX >= FLING_THRESHOLD) {
-                                prevPage();
+                            if (velocityX >= FLING_THRESHOLD && book.hasPreviousSection()) {
+                                startReaderFlingAnimation(
+                                        velocityX,
+                                        (animation, canceled, value, velocity) -> {
+                                            prevPage();
+                                        });
                                 return true;
-                            } else if (velocityX <= -FLING_THRESHOLD) {
-                                nextPage();
+                            } else if (velocityX <= -FLING_THRESHOLD && book.hasNextSection()) {
+                                startReaderFlingAnimation(
+                                        velocityX,
+                                        (animation, canceled, value, velocity) -> {
+                                            nextPage();
+                                        });
                                 return true;
                             }
 
@@ -197,10 +205,10 @@ public class ReaderActivity extends Activity {
 
 
             public void onPageFinished(WebView view, String url) {
-               // addEOCPadding();
                 try {
                     restoreBgColor();
                     restoreScrollOffsetDelayed(100);
+                    restorePos();
                 } catch (Throwable t) {
                     Log.e(TAG, t.getMessage(), t);
                 }
@@ -208,44 +216,16 @@ public class ReaderActivity extends Activity {
 
         });
 
-
         progressBar = findViewById(R.id.progressBar);
 
-        findViewById(R.id.prev_button).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                prevPage();
-            }
-        });
+        findViewById(R.id.prev_button).setOnClickListener(view -> prevPage());
+        findViewById(R.id.next_button).setOnClickListener(view -> nextPage());
+        findViewById(R.id.zoom_button).setOnClickListener(view -> selectFontSize());
+        findViewById(R.id.brightness_button).setOnClickListener(view -> showBrightnessControl());
 
-        findViewById(R.id.next_button).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                nextPage();
-            }
-        });
-
-        findViewById(R.id.contents_button).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showToc();
-                //hideMenu();
-            }
-        });
-
-        findViewById(R.id.zoom_button).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                selectFontSize();
-                //hideMenu();
-            }
-        });
-        findViewById(R.id.brightness_button).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showBrightnessControl();
-                //hideMenu();
-            }
+        findViewById(R.id.contents_button).setOnClickListener(view -> {
+            showToc();
+            //hideMenu();
         });
 
         showMore.setOnClickListener(morelessControls);
@@ -253,21 +233,19 @@ public class ReaderActivity extends Activity {
 
         fullscreenBox = findViewById(R.id.fullscreen_box);
 
-        fullscreenBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                setFullscreen(b);
-                if (b) {
-                    fullscreenBox.postDelayed(
+        fullscreenBox.setOnCheckedChangeListener((compoundButton, b) -> {
+            setFullscreen(b);
+            if (b) {
+                fullscreenBox.postDelayed(
                         new Runnable() {
-                              @Override
-                              public void run() {
-                                  mkFull();
-                                  hideMenu();
-                              }
+                            @Override
+                            public void run() {
+                                mkFull();
+                                hideMenu();
+                            }
                         }, 500);
-                } else {
-                    fullscreenBox.postDelayed(
+            } else {
+                fullscreenBox.postDelayed(
                         new Runnable() {
                             @Override
                             public void run() {
@@ -275,16 +253,10 @@ public class ReaderActivity extends Activity {
                                 hideMenu();
                             }
                         }, 500);
-                }
             }
         });
 
-        findViewById(R.id.fullscreen_button).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                fullscreenBox.setChecked(!fullscreenBox.isChecked());
-            }
-        });
+        findViewById(R.id.fullscreen_button).setOnClickListener(view -> fullscreenBox.setChecked(!fullscreenBox.isChecked()));
 
         //findFile();
         String filename = intent.getStringExtra(FILENAME);
@@ -296,7 +268,23 @@ public class ReaderActivity extends Activity {
                 loadFile(new File(filename));
             }
         }
+    }
 
+    private void startReaderFlingAnimation(float velocityX,
+                                           DynamicAnimation.OnAnimationEndListener endListener) {
+        if (webView != null) {
+            float signum = Math.signum(velocityX);
+            float magnitude = Math.abs(velocityX);
+            float flingVelocity = signum * Math.max(magnitude, 4000);
+
+            FlingAnimation fling = new FlingAnimation(webView, DynamicAnimation.X);
+            fling.setStartVelocity(flingVelocity)
+                    .setMinValue(webView.getWidth() * -0.75f)
+                    .setMaxValue(webView.getWidth() * 0.75f)
+                    .setFriction(0.5f)
+                    .addEndListener(endListener)
+                    .start();
+        }
     }
 
     @Override
@@ -397,7 +385,7 @@ public class ReaderActivity extends Activity {
 
     private void prevPage() {
         if (book != null) {
-            showUri(book.getPreviousSection());
+            showUri(book.gotoPreviousSection());
         }
 
         hideMenu();
@@ -405,7 +393,7 @@ public class ReaderActivity extends Activity {
 
     private void nextPage() {
         if (book != null) {
-            showUri(book.getNextSection());
+            showUri(book.gotoNextSection());
         }
 
         hideMenu();
@@ -434,6 +422,14 @@ public class ReaderActivity extends Activity {
                 Log.d(TAG, "restoreScrollOffset " + spos);
             }
         }, delay);
+    }
+
+    private void restorePos() {
+        handler.post(() -> {
+            if (webView != null) {
+                webView.setTranslationX(0);
+            }
+        });
     }
 
     private void loadFile(File file) {
@@ -523,7 +519,7 @@ public class ReaderActivity extends Activity {
                     throw ract.exception;
                 }
                 if (book !=null && ract.book != null && ract.book.hasDataDir()) {
-                    int fontsize = ract.book.getFontsize();
+                    int fontsize = ract.book.getFontSize();
                     if (fontsize != -1) {
                         ract.setFontSize(fontsize);
                     }
@@ -583,7 +579,7 @@ public class ReaderActivity extends Activity {
     }
 
     private void setFontSize(int size) {
-        book.setFontsize(size);
+        book.setFontSize(size);
         webView.getSettings().setDefaultFontSize(size);
         webView.getSettings().setDefaultFixedFontSize(size);
     }

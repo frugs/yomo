@@ -6,6 +6,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.util.Log;
 
+import androidx.annotation.Nullable;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -20,12 +22,12 @@ import com.frugs.yomo.FsTools;
 
 /**
  * Copyright (C) 2017   Tom Kliethermes
- *
+ * <p>
  * This file is part of BookyMcBookface and is is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as published by the
  * Free Software Foundation; either version 3 of the License, or (at your option) any
  * later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
  * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -57,7 +59,7 @@ public abstract class Book {
 
     protected abstract void load() throws IOException;
 
-    public abstract Map<String,String> getToc();
+    public abstract Map<String, String> getToc();
 
     protected abstract BookMetadata getMetaData() throws IOException;
 
@@ -87,14 +89,7 @@ public abstract class Book {
     }
 
     public boolean hasDataDir() {
-        return data!=null;
-    }
-
-    public Uri getFirstSection() {
-        clearSectionOffset();
-        currentSectionIDPos = 0;
-        saveCurrentSectionID();
-        return getUriForSectionID(sectionIDs.get(currentSectionIDPos));
+        return data != null;
     }
 
     public Uri getCurrentSection() {
@@ -115,16 +110,12 @@ public abstract class Book {
         }
     }
 
-    public void setFontsize(int fontsize) {
-        data.edit().putInt(FONTSIZE, fontsize).apply();
+    public void setFontSize(int fontSize) {
+        data.edit().putInt(FONTSIZE, fontSize).apply();
     }
 
-    public int getFontsize() {
+    public int getFontSize() {
         return data.getInt(FONTSIZE, -1);
-    }
-
-    public void clearFontsize() {
-        data.edit().remove(FONTSIZE).apply();
     }
 
     public void setSectionOffset(int offset) {
@@ -164,14 +155,18 @@ public abstract class Book {
         return data.getBoolean(key, value);
     }
 
+    public boolean hasNextSection() {
+        return currentSectionIDPos + 1 < sectionIDs.size();
+    }
 
-    public Uri getNextSection() {
+    public boolean hasPreviousSection() {
+        return currentSectionIDPos - 1 >= 0;
+    }
+
+    public Uri gotoNextSection() {
         try {
-            if (currentSectionIDPos + 1 < sectionIDs.size()) {
-                clearSectionOffset();
-                currentSectionIDPos++;
-                saveCurrentSectionID();
-                return getUriForSectionID(sectionIDs.get(currentSectionIDPos));
+            if (hasNextSection()) {
+                return gotoSectionID(sectionIDs.get(currentSectionIDPos + 1));
             }
         } catch (Throwable t) {
             Log.e("Booky", t.getMessage(), t);
@@ -179,13 +174,10 @@ public abstract class Book {
         return null;
     }
 
-    public Uri getPreviousSection() {
+    public Uri gotoPreviousSection() {
         try {
-            if (currentSectionIDPos - 1 >= 0) {
-                clearSectionOffset();
-                currentSectionIDPos--;
-                saveCurrentSectionID();
-                return getUriForSectionID(sectionIDs.get(currentSectionIDPos));
+            if (hasPreviousSection()) {
+                return gotoSectionID(sectionIDs.get(currentSectionIDPos - 1));
             }
         } catch (Throwable t) {
             Log.e("Booky", t.getMessage(), t);
@@ -193,25 +185,28 @@ public abstract class Book {
         return null;
     }
 
-    private void gotoSectionID(String id) {
+    @Nullable
+    private Uri gotoSectionID(String id) {
         try {
             int pos = sectionIDs.indexOf(id);
             if (pos > -1 && pos < sectionIDs.size()) {
+                clearSectionOffset();
                 currentSectionIDPos = pos;
                 saveCurrentSectionID();
-                getUriForSectionID(sectionIDs.get(currentSectionIDPos));
+                return getUriForSectionID(sectionIDs.get(currentSectionIDPos));
             }
         } catch (Throwable t) {
             Log.e("Booky", t.getMessage(), t);
         }
+
+        return null;
     }
 
     public Uri handleClickedLink(String clickedLink) {
         ReadPoint readPoint = locateReadPoint(clickedLink);
 
-        if (readPoint!=null) {
+        if (readPoint != null) {
             gotoSectionID(readPoint.getId());
-            clearSectionOffset();
             return readPoint.getPoint();
         }
         return null;
@@ -229,21 +224,21 @@ public abstract class Book {
     }
 
     private static String makeOldFName(File file) {
-        return file.getPath().replaceAll("[/\\\\]","_");
+        return file.getPath().replaceAll("[/\\\\]", "_");
     }
 
     private static final String reservedChars = "[/\\\\:?\"'*|<>+\\[\\]()]";
 
     private static String makeFName(File file) {
-        String fname = file.getPath().replaceAll(reservedChars,"_");
-        if (fname.getBytes().length>60) {
+        String fname = file.getPath().replaceAll(reservedChars, "_");
+        if (fname.getBytes().length > 60) {
             //for very long names, we take the first part and the last part and the crc.
             // should be unique.
             int len = 30;
-            if (fname.length()<=len) {  //just in case I'm missing some utf bytes vs length weirdness here
-                len = fname.length()-1;
+            if (fname.length() <= len) {  //just in case I'm missing some utf bytes vs length weirdness here
+                len = fname.length() - 1;
             }
-            fname = fname.substring(0,len) + fname.substring(fname.length()-len/2) + crc32(fname);
+            fname = fname.substring(0, len) + fname.substring(fname.length() - len / 2) + crc32(fname);
         }
         return fname;
     }
@@ -294,7 +289,7 @@ public abstract class Book {
                 getStorage(context, file).edit().clear().commit();
             }
         } catch (Exception e) {
-            Log.e("Book", e.getMessage(),e);
+            Log.e("Book", e.getMessage(), e);
         }
     }
 
@@ -337,7 +332,6 @@ public abstract class Book {
     }
 
 
-
     public static String getFileExtensionRX() {
         return ".*\\.(epub|txt|html?)";
     }
@@ -361,7 +355,7 @@ public abstract class Book {
     public static BookMetadata getBookMetaData(Context context, String filename) throws IOException {
 
         Book book = getBookHandler(context, filename);
-        if (book!=null) {
+        if (book != null) {
             book.setFile(new File(filename));
 
             return book.getMetaData();
