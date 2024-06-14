@@ -83,9 +83,10 @@
     <string name="options">Options</string>
     <string name="open_syosetu">Browse syosetu.com</string>
     <string name="exit_syosetu">Exit syosetu.com</string>
-    <string name="add_syosetu_fail_toast">Failed to add syosetu</string>
+    <string name="add_syosetu_fail_toast">Failed to add novel</string>
     <string name="download_notification_channel_name">Download notifications</string>
     <string name="download_notification_channel_description">Required for downloading in the background</string>
+    <string name="adding_syosetu_toast">Adding novel</string>
 
 
     <!-- if your language/country has its own sites change or add them here -->

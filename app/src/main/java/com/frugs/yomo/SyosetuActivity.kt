@@ -15,7 +15,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
-import com.frugs.yomo.syosetu.SyosetuService
 import com.frugs.yomo.syosetu.SyosetuService.Companion.getNcode
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
@@ -26,14 +25,8 @@ class SyosetuActivity : AppCompatActivity() {
   private var webView: WebView? = null
   private var fab: FloatingActionButton? = null
 
-  private var db: BookDb? = null
-  private var syosetuService: SyosetuService? = null
-
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-
-    db = BookyApp.getDB(this)
-    syosetuService = BookyApp.getSyosetuService(this)
 
     this.enableEdgeToEdge()
     requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -50,35 +43,49 @@ class SyosetuActivity : AppCompatActivity() {
 
     val fab = findViewById<FloatingActionButton>(R.id.syosetu_fab)
     fab.visibility = View.INVISIBLE
-    fab.setOnClickListener { v: View? ->
-      if (syosetuService == null || db == null) {
-        return@setOnClickListener
+    fab.setOnClickListener { _ ->
+      fun showAddingToast() {
+        val toast = Toast.makeText(
+            this@SyosetuActivity,
+            R.string.adding_syosetu_toast,
+            Toast.LENGTH_SHORT)
+        toast.show()
       }
-      val url = webView.url
 
+      fun showAddingFailedToast() {
+        val toast = Toast.makeText(
+            this@SyosetuActivity,
+            R.string.add_syosetu_fail_toast,
+            Toast.LENGTH_SHORT)
+        toast.show()
+      }
+
+      val url = webView.url
       if (url == null || !url.contains("ncode.syosetu.com")) {
+        showAddingFailedToast()
         return@setOnClickListener
       }
 
       val ncode = getNcode(url)
-
       if (ncode.isNullOrEmpty()) {
+        showAddingFailedToast()
         return@setOnClickListener
       }
 
+      showAddingToast()
+      fab?.isEnabled = false
+
       lifecycleScope.launch {
-        val details = syosetuService!!.getDetails(ncode)
+        val db = BookyApp.getDB(this@SyosetuActivity)
+        val syosetuService = BookyApp.getSyosetuService(this@SyosetuActivity)
+        val details = syosetuService.getDetails(ncode)
 
         withContext(Dispatchers.Main) {
           if (details != null) {
-            db!!.addBook("$ncode.ncode", details.title, details.author)
+            db.addBook("$ncode.ncode", details.title, details.author)
             finish()
           } else {
-            val toast = Toast.makeText(
-                this@SyosetuActivity,
-                R.string.add_syosetu_fail_toast,
-                Toast.LENGTH_SHORT)
-            toast.show()
+            showAddingFailedToast()
           }
         }
       }

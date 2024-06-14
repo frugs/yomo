@@ -890,16 +890,13 @@ public class ReaderActivity extends Activity {
             norm.setChecked(true);
         }
 
-        norm.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                unlistenLight();
-                saveScrollOffset();
-                book.clearBackgroundColor();
-                resetColor();
-                webView.reload();
-                return true;
-            }
+        norm.setOnMenuItemClickListener(item -> {
+            unlistenLight();
+            saveScrollOffset();
+            book.clearBackgroundColor();
+            resetColor();
+            webView.reload();
+            return true;
         });
 
 
