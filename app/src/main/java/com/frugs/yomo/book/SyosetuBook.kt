@@ -4,13 +4,14 @@ import android.app.job.JobInfo
 import android.app.job.JobScheduler
 import android.content.ComponentName
 import android.content.Context
+import android.content.SharedPreferences
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener
 import android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET
 import android.net.NetworkRequest
 import android.net.Uri
 import android.os.PersistableBundle
-import androidx.annotation.OptIn
-import com.frugs.yomo.BookyApp
 import com.frugs.yomo.syosetu.SyosetuDownloadJobService
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.IOException
@@ -20,7 +21,7 @@ class SyosetuBook(context: Context?) : Book(context) {
 
   companion object {
     private val META_PREFIX = "meta."
-    private val ORDERCOUNT = "ordercount"
+    val KEY_PAGE_COUNT = "ordercount"
     private val BOOK_CONTENT_DIR = "bookContentDir"
     private val ORDER = "order."
     private val ITEM = "item."
@@ -54,43 +55,48 @@ class SyosetuBook(context: Context?) : Book(context) {
 
   @Throws(IOException::class)
   override fun load() {
-    runBlocking {
-      val syosetuService = BookyApp.getSyosetuService(context)
-
-      if (!sharedPreferences.contains(ORDERCOUNT)) {
-        val details = syosetuService.getDetails(ncode)
-        val pages = details?.pages ?: 1
-        for (i in 1..pages) {
-          val jobInfo = JobInfo.Builder(
-              i,
-              ComponentName(context, SyosetuDownloadJobService::class.java))
-            .setUserInitiated(true)
-            .setRequiredNetwork(
-                NetworkRequest.Builder()
-                  .addCapability(NET_CAPABILITY_INTERNET)
-                  .build())
-            .setEstimatedNetworkBytes(1024 * 1024 * 1024, 1024 * 1024 * 1024)
-            .setExtras(PersistableBundle().apply {
-              putString(SyosetuDownloadJobService.KEY_NCODE, ncode)
-              putString(SyosetuDownloadJobService.KEY_BOOK_URI, thisBookDir.toURI().toString())
-            })
-            .build()
-
-          val jobScheduler: JobScheduler =
-              context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
-          jobScheduler.schedule(jobInfo)
+    if (!sharedPreferences.contains(KEY_PAGE_COUNT)) {
+      val blockingJob = Job()
+      val listener = object : OnSharedPreferenceChangeListener {
+        override fun onSharedPreferenceChanged(prefs: SharedPreferences?, key: String?) {
+          if (key == KEY_PAGE_COUNT) {
+            blockingJob.complete()
+            sharedPreferences?.unregisterOnSharedPreferenceChangeListener(this)
+          }
         }
-
-        val bookData = sharedPreferences.edit()
-        bookData.putInt(ORDERCOUNT, pages)
-        bookData.apply()
       }
+      sharedPreferences.registerOnSharedPreferenceChangeListener(listener)
 
-      val pages = sharedPreferences.getInt(ORDERCOUNT, 1)
-      for (i in 1..pages) {
-        docFileOrder.add(getOrderFileName(i))
+      val jobInfo = JobInfo.Builder(
+          ncode.hashCode(),
+          ComponentName(context, SyosetuDownloadJobService::class.java))
+        .setUserInitiated(true)
+        .setRequiredNetwork(
+            NetworkRequest.Builder()
+              .addCapability(NET_CAPABILITY_INTERNET)
+              .build())
+        .setEstimatedNetworkBytes(1024 * 1024 * 1024, 1024 * 1024 * 1024)
+        .setExtras(PersistableBundle().apply {
+          putString(SyosetuDownloadJobService.KEY_NCODE, ncode)
+          putString(SyosetuDownloadJobService.KEY_BOOK_URI, thisBookDir.toURI().toString())
+          putString(SyosetuDownloadJobService.KEY_BOOK_DATA, dataFileName)
+        })
+        .build()
+
+      val jobScheduler: JobScheduler =
+          context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
+      jobScheduler.schedule(jobInfo)
+
+      runBlocking {
+        blockingJob.join()
       }
     }
+
+    val pages = sharedPreferences.getInt(KEY_PAGE_COUNT, 1)
+    for (i in 1..pages) {
+      docFileOrder.add(getOrderFileName(i))
+    }
+
   }
 
   override fun getToc(): Map<String, String>? {

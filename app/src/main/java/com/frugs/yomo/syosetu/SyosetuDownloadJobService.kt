@@ -7,6 +7,7 @@ import androidx.core.net.toFile
 import androidx.core.net.toUri
 import com.frugs.yomo.BookyApp
 import com.frugs.yomo.R
+import com.frugs.yomo.book.SyosetuBook
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -34,6 +35,11 @@ class SyosetuDownloadJobService : JobService() {
     val ncode = params.extras.getString(KEY_NCODE, "")
     if (ncode.isEmpty()) {
       return false
+    }
+
+    val bookData = when (val bookDataFileName = params.extras.getString(KEY_BOOK_DATA, "")) {
+      "" -> return false
+      else -> getSharedPreferences(bookDataFileName, MODE_PRIVATE)
     }
 
     val bookDir = when (val bookUriString = params.extras.getString(KEY_BOOK_URI, "")) {
@@ -91,6 +97,11 @@ class SyosetuDownloadJobService : JobService() {
             .setContentText(if (title.isNullOrEmpty()) ncode else "「$title」")
             .build(),
           JOB_END_NOTIFICATION_POLICY_DETACH)
+
+      bookData.edit()
+        .putInt(SyosetuBook.KEY_PAGE_COUNT, pages)
+        .apply()
+
       jobFinished(params, false)
     }
     jobs[ncode] = job
@@ -125,5 +136,6 @@ class SyosetuDownloadJobService : JobService() {
 
     const val KEY_NCODE = "KEY_NCODE"
     const val KEY_BOOK_URI = "KEY_BOOK_DIR"
+    const val KEY_BOOK_DATA = "KEY_BOOK_DATA"
   }
 }

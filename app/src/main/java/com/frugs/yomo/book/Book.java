@@ -42,6 +42,8 @@ public abstract class Book {
     private File file;
 
     private final File dataDir;
+
+    private String dataFileName;
     private SharedPreferences data;
     private final Context context;
 
@@ -75,6 +77,7 @@ public abstract class Book {
 
     public void load(File file) {
         this.file = file;
+        dataFileName = getProperFName(context, file);
         data = getStorage(context, file);
 
         thisBookDir = getBookDir(context, file);
@@ -327,7 +330,11 @@ public abstract class Book {
         return context;
     }
 
-    SharedPreferences getSharedPreferences() {
+    protected String getDataFileName() {
+        return dataFileName;
+    }
+
+    protected SharedPreferences getSharedPreferences() {
         return data;
     }
 
