@@ -36,18 +36,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.OptIn;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.media3.exoplayer.offline.DownloadService;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.frugs.yomo.book.Book;
 import com.frugs.yomo.book.BookMetadata;
-import com.frugs.yomo.syosetu.SyosetuDownloadService;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -126,42 +123,17 @@ public class BookListActivity extends AppCompatActivity {
         listHolder.setItemAnimator(new DefaultItemAnimator());
 
         bookAdapter = new BookAdapter(this, db, new ArrayList<Integer>());
-        bookAdapter.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                readBook((int) view.getTag());
-            }
-        });
-        bookAdapter.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View view) {
-                longClickBook(view);
-                return false;
-            }
+        bookAdapter.setOnClickListener(view -> readBook((int) view.getTag()));
+        bookAdapter.setOnLongClickListener(view -> {
+            longClickBook(view);
+            return false;
         });
 
         listHolder.setAdapter(bookAdapter);
 
         processIntent(getIntent());
 
-        startDownloadService();
-
         //Log.d("BOOKLIST", "onCreate end");
-    }
-
-    /**
-     * Start the download service if it should be running but it's not currently.
-     */
-    @OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
-    private void startDownloadService() {
-        // Starting the service in the foreground causes notification flicker if there is no scheduled
-        // action. Starting it in the background throws an exception if the app is in the background too
-        // (e.g. if device screen is locked).
-        try {
-            DownloadService.start(this, SyosetuDownloadService.class);
-        } catch (IllegalStateException e) {
-            DownloadService.startForeground(this, SyosetuDownloadService.class);
-        }
     }
 
     @Override

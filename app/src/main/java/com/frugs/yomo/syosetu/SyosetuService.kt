@@ -2,6 +2,7 @@ package com.frugs.yomo.syosetu
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.net.Uri
 import android.util.Log
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonArrayRequest
@@ -19,7 +20,7 @@ import java.util.regex.Pattern
 
 class SyosetuService(context: Context) {
   companion object {
-    private val pattern = Pattern.compile("https://ncode.syosetu.com/(.*)/.*")
+    private val pattern = Pattern.compile("https://ncode.syosetu.com/([^/]*)/.*")
 
     fun getNcode(url: String): String? {
 
@@ -52,9 +53,12 @@ class SyosetuService(context: Context) {
     }
   }
 
+  fun getTextUri(ncode: String, page: Int): Uri =
+      Uri.parse("https://ncode.syosetu.com/$ncode/$page/")
+
   suspend fun getText(ncode: String, page: Int): String {
     return withContext(Dispatchers.IO) {
-      val response = Jsoup.connect("https://ncode.syosetu.com/$ncode/$page/").execute()
+      val response = Jsoup.connect(getTextUri(ncode, page).toString()).execute()
       return@withContext parseText(response.body())
     }
   }

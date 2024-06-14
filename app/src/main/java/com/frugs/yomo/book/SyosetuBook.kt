@@ -1,8 +1,16 @@
 package com.frugs.yomo.book
 
+import android.app.job.JobInfo
+import android.app.job.JobScheduler
+import android.content.ComponentName
 import android.content.Context
+import android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET
+import android.net.NetworkRequest
 import android.net.Uri
+import android.os.PersistableBundle
+import androidx.annotation.OptIn
 import com.frugs.yomo.BookyApp
+import com.frugs.yomo.syosetu.SyosetuDownloadJobService
 import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.IOException
@@ -22,7 +30,7 @@ class SyosetuBook(context: Context?) : Book(context) {
     private val TOC = "toc"
 
     private fun getOrderFileName(order: Int): String {
-      return "${ORDER}${order}.html"
+      return "${order}.html"
     }
   }
 
@@ -53,13 +61,24 @@ class SyosetuBook(context: Context?) : Book(context) {
         val details = syosetuService.getDetails(ncode)
         val pages = details?.pages ?: 1
         for (i in 1..pages) {
-          val text = syosetuService.getText(ncode, i)
-          val orderFileName = getOrderFileName(i)
+          val jobInfo = JobInfo.Builder(
+              i,
+              ComponentName(context, SyosetuDownloadJobService::class.java))
+            .setUserInitiated(true)
+            .setRequiredNetwork(
+                NetworkRequest.Builder()
+                  .addCapability(NET_CAPABILITY_INTERNET)
+                  .build())
+            .setEstimatedNetworkBytes(1024 * 1024 * 1024, 1024 * 1024 * 1024)
+            .setExtras(PersistableBundle().apply {
+              putString(SyosetuDownloadJobService.KEY_NCODE, ncode)
+              putString(SyosetuDownloadJobService.KEY_BOOK_URI, thisBookDir.toURI().toString())
+            })
+            .build()
 
-          val outFile = File(thisBookDir, orderFileName)
-          if (!outFile.exists()) {
-            outFile.writeText(text)
-          }
+          val jobScheduler: JobScheduler =
+              context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
+          jobScheduler.schedule(jobInfo)
         }
 
         val bookData = sharedPreferences.edit()
