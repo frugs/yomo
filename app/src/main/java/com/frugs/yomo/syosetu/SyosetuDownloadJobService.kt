@@ -78,6 +78,10 @@ class SyosetuDownloadJobService : JobService() {
           JOB_END_NOTIFICATION_POLICY_DETACH)
 
       val pages = details?.pages ?: 1
+      bookData.edit()
+        .putInt(SyosetuBook.KEY_PAGE_COUNT, pages)
+        .apply()
+
       (1..pages).map { i ->
         launch {
           val outFile = File(bookDir, "${i}.html")
@@ -97,10 +101,6 @@ class SyosetuDownloadJobService : JobService() {
             .setContentText(if (title.isNullOrEmpty()) ncode else "「$title」")
             .build(),
           JOB_END_NOTIFICATION_POLICY_DETACH)
-
-      bookData.edit()
-        .putInt(SyosetuBook.KEY_PAGE_COUNT, pages)
-        .apply()
 
       jobFinished(params, false)
     }

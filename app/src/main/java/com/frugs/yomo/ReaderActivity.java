@@ -16,6 +16,7 @@ import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.FileObserver;
 import android.os.Handler;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -91,6 +92,8 @@ public class ReaderActivity extends Activity {
     private Throwable exception;
 
     private boolean hasLightSensor = false;
+
+    private FileObserver fileObserver = null;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -450,7 +453,7 @@ public class ReaderActivity extends Activity {
             try {
                 ract.book = Book.getBookHandler(ract, file.getPath());
                 Log.d(TAG, "File " + file);
-                if (ract.book!=null) {
+                if (ract.book != null) {
                     ract.book.load(file);
                     return ract.book;
                 }
@@ -473,8 +476,6 @@ public class ReaderActivity extends Activity {
 
             String badtext = ract.getString(R.string.book_bug);
             try {
-                ract.progressBar.setVisibility(View.GONE);
-
                 if (book==null && ract.exception!=null) {
                     ract.webView.setOnTouchListener(null);
                     ract.webView.setWebViewClient(null);
@@ -513,9 +514,35 @@ public class ReaderActivity extends Activity {
         if (uri != null) {
             Log.d(TAG, "trying to load " + uri);
 
+            if (fileObserver != null) {
+                fileObserver.stopWatching();
+            }
 
+            File file = new File(uri.getPath());
+            int mask = FileObserver.CREATE | FileObserver.MODIFY | FileObserver.MOVED_TO | FileObserver.MOVE_SELF;
+            fileObserver = new FileObserver(file) {
+                @Override
+                public void onEvent(int event, @Nullable String path) {
+                    try {
+                        if ((event & mask) == 0) {
+                            return;
+                        }
 
-            webView.loadUrl(uri.toString());
+                        progressBar.setVisibility(View.GONE);
+                        webView.loadUrl(uri.toString());
+                    } catch (Throwable tr) {
+                        Log.e(TAG, "Error swallowed in file observer", tr);
+                    }
+                }
+            };
+            fileObserver.startWatching();
+
+            if (file.exists()) {
+                progressBar.setVisibility(View.GONE);
+                webView.loadUrl(uri.toString());
+            } else {
+                progressBar.setVisibility(View.VISIBLE);
+            }
         }
     }
 
@@ -650,11 +677,17 @@ public class ReaderActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        if (timer!=null) {
+        if (timer != null) {
             timer.cancel();
             timer.purge();
             timer = null;
         }
+
+        if (fileObserver != null) {
+            fileObserver.stopWatching();
+            fileObserver = null;
+        }
+
         super.onDestroy();
     }
 
