@@ -81,9 +81,6 @@ public class ReaderActivity extends Activity {
     private Timer timer;
 
     private TimerTask nowakeTask = null;
-    private TimerTask scrollTask = null;
-
-    private volatile int scrollDir;
 
     private final Handler handler = new Handler();
 
@@ -92,8 +89,6 @@ public class ReaderActivity extends Activity {
     private ProgressBar progressBar;
 
     private Throwable exception;
-
-    private int currentDimColor = Color.TRANSPARENT;
 
     private boolean hasLightSensor = false;
 
@@ -320,6 +315,7 @@ public class ReaderActivity extends Activity {
             }
         }
     };
+
     private void setFullscreenMode() {
         if (book!=null && book.hasDataDir()) {
             setFullscreen(book.getFlag(FULLSCREEN, true));
@@ -348,39 +344,6 @@ public class ReaderActivity extends Activity {
         findViewById(R.id.control_view_less).setVisibility(View.GONE);
         findViewById(R.id.controls_layout).setVisibility(View.GONE);
         mkFull();
-    }
-
-    int scrollTaskCounter = 0;
-
-    private void startScrollTask() {
-        synchronized (timerSync) {
-            if (scrollTask == null) {
-                scrollTask = new TimerTask() {
-                    @Override
-                    public void run() {
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                webView.scrollBy(0, scrollDir);
-                            }
-                        });
-                    }
-                };
-                try {
-                    if (timer!=null) timer.schedule(scrollTask, 0, 100);
-                } catch(IllegalStateException e) {
-                    Log.d(TAG, e.getMessage(), e);
-                    Toast.makeText(this,"Something went wrong. Please report a 'scroll' bug.",Toast.LENGTH_LONG).show();
-                }
-            }
-        }
-    }
-
-    private void cancelScrollTask() {
-        if (scrollTask!=null) {
-            scrollTask.cancel();
-            scrollTask = null;
-        }
     }
 
     private void prevPage() {
@@ -547,10 +510,11 @@ public class ReaderActivity extends Activity {
 
 
     private void showUri(Uri uri) {
-        if (uri !=null) {
+        if (uri != null) {
             Log.d(TAG, "trying to load " + uri);
 
-            //book.clearSectionOffset();
+
+
             webView.loadUrl(uri.toString());
         }
     }
@@ -590,7 +554,7 @@ public class ReaderActivity extends Activity {
         final float scale = getResources().getDisplayMetrics().density;
 
 
-       // Log.d(TAG, "def " + defsize + " " + scale);
+        // Log.d(TAG, "def " + defsize + " " + scale);
         final PopupMenu sizemenu = new PopupMenu(this, findViewById(R.id.zoom_button));
         for (int size=minsize; size<=36; size+=2) {
             final int s = size;
@@ -987,7 +951,6 @@ public class ReaderActivity extends Activity {
 
     @SuppressLint("SetJavaScriptEnabled")
     private void applyColor(int bgColor, int fgColor) {
-        currentDimColor = bgColor;
         try {
 
             ViewGroup controls = findViewById(R.id.controls_layout);
