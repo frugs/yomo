@@ -8,7 +8,7 @@ import androidx.core.net.toFile
 import androidx.core.net.toUri
 import com.frugs.yomo.BookyApp
 import com.frugs.yomo.R
-import com.frugs.yomo.TAG
+import com.frugs.yomo.util.TAG
 import com.frugs.yomo.book.SyosetuBook
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -103,13 +103,13 @@ class SyosetuDownloadJobService : JobService() {
                 .apply()
             } catch (ex: HttpStatusException) {
               if (ex.statusCode == 503) {
-                Log.e(this.TAG, "Possibly exceed rate limit - delaying next attempt", ex)
+                Log.e(TAG, "Possibly exceed rate limit - delaying next attempt", ex)
                 delay(60 * 1000)
               } else {
-                Log.e(this.TAG, "Unexpected error fetching page text", ex)
+                Log.e(TAG, "Unexpected error fetching page text", ex)
               }
             } catch (ex: IOException) {
-              Log.e(this.TAG, "Unexpected error fetching page text", ex)
+              Log.e(TAG, "Unexpected error fetching page text", ex)
             }
           }
         }

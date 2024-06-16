@@ -8,7 +8,7 @@ import com.android.volley.Request
 import com.android.volley.toolbox.JsonArrayRequest
 import com.android.volley.toolbox.RequestFuture
 import com.android.volley.toolbox.Volley
-import com.frugs.yomo.TAG
+import com.frugs.yomo.util.TAG
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
