@@ -3,7 +3,6 @@ package com.frugs.yomo.book;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
-import android.os.Build;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -16,8 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
-
-import com.frugs.yomo.FsTools;
 
 
 /**
@@ -61,8 +58,6 @@ public abstract class Book {
     protected abstract void load() throws IOException;
 
     public abstract Map<String, String> getToc();
-
-    protected abstract BookMetadata getMetaData() throws IOException;
 
     protected abstract List<String> getSectionIds();
 
@@ -283,7 +278,7 @@ public abstract class Book {
 
     public static void remove(Context context, File file) {
         try {
-            FsTools.deleteDir(getBookDir(context, file));
+            deleteDir(getBookDir(context, file));
             String fName = getProperFName(context, file);
             context.deleteSharedPreferences(fName);
         } catch (Exception e) {
@@ -291,9 +286,21 @@ public abstract class Book {
         }
     }
 
-    public boolean remove() {
-        FsTools.deleteDir(getThisBookDir());
-        return data.edit().clear().commit();
+    public static void deleteDir(File dir) {
+        if (dir.exists()) {
+            File[] files = dir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isDirectory()) {
+                        deleteDir(file);
+                    } else {
+                        file.delete();
+                    }
+                }
+            }
+        }
+
+        dir.delete();
     }
 
     File getThisBookDir() {
@@ -310,10 +317,6 @@ public abstract class Book {
 
     File getFile() {
         return file;
-    }
-
-    private void setFile(File file) {
-        this.file = file;
     }
 
 
@@ -337,37 +340,14 @@ public abstract class Book {
         return currentSectionIDPos;
     }
 
-    public static String getFileExtensionRX() {
-        return ".*\\.(epub|txt|html?)";
-    }
-
-    public static Book getBookHandler(Context context, String filename) throws IOException {
+    public static Book getBookHandler(Context context, String filename) {
         Book book = null;
-        if (filename.toLowerCase().endsWith(".epub")) {
-            book = new EpubBook(context);
-        } else if (filename.toLowerCase().endsWith(".txt")) {
-            book = new TxtBook(context);
-        } else if (filename.toLowerCase().endsWith(".html") || filename.toLowerCase().endsWith(".htm")) {
-            book = new HtmlBook(context);
-        } else if (filename.toLowerCase().endsWith(".ncode")) {
+
+        if (filename.toLowerCase().endsWith(".ncode")) {
             book = new SyosetuBook(context);
         }
 
         return book;
-
-    }
-
-    public static BookMetadata getBookMetaData(Context context, String filename) throws IOException {
-
-        Book book = getBookHandler(context, filename);
-        if (book != null) {
-            book.setFile(new File(filename));
-
-            return book.getMetaData();
-        }
-
-        return null;
-
     }
 
     protected class ReadPoint {

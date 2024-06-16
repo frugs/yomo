@@ -10,7 +10,6 @@ import android.content.pm.PackageManager;
 import android.content.pm.ShortcutInfo;
 import android.content.pm.ShortcutManager;
 import android.graphics.drawable.Icon;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -25,7 +24,6 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -44,7 +42,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.frugs.yomo.book.Book;
-import com.frugs.yomo.book.BookMetadata;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -361,12 +358,9 @@ public class BookListActivity extends AppCompatActivity {
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        //Log.d("Booky", "onPrepareOptionsMenu called, showingSearch=" + showingSearch);
         super.onPrepareOptionsMenu(menu);
 
         menu.findItem(R.id.menu_add).setVisible(!showingSearch);
-        menu.findItem(R.id.menu_add_dir).setVisible(!showingSearch);
-        menu.findItem(R.id.menu_get_books).setVisible(!showingSearch);
         menu.findItem(R.id.menu_sort).setVisible(!showingSearch);
 
         switch (showStatus) {
@@ -397,11 +391,7 @@ public class BookListActivity extends AppCompatActivity {
         int status = BookDb.STATUS_ANY;
         boolean pop = false;
         int itemId = item.getItemId();
-        if (itemId == R.id.menu_add) {//case R.id.menu_add2:
-            findFile();
-        } else if (itemId == R.id.menu_add_dir) {
-            findDir();
-        } else if (itemId == R.id.menu_about) {
+        if (itemId == R.id.menu_about) {
             showMsg(BookListActivity.this, getString(R.string.about), getString(R.string.about_app));
         } else if (itemId == R.id.menu_sort_default) {
             item.setChecked(true);
@@ -419,9 +409,6 @@ public class BookListActivity extends AppCompatActivity {
             item.setChecked(true);
             setSortOrder(SortOrder.Added);
             pop = true;
-        } else if (itemId == R.id.menu_get_books) {
-            Intent intent = new Intent(this, GetBooksActivity.class);
-            startActivity(intent);
         } else if (itemId == R.id.menu_completed_books) {
             pop = true;
             status = BookDb.STATUS_DONE;
@@ -445,7 +432,7 @@ public class BookListActivity extends AppCompatActivity {
             data.edit().putInt(STARTWITH_KEY, STARTOPEN).apply();
         } else if (itemId == R.id.menu_start_last_read) {
             data.edit().putInt(STARTWITH_KEY, STARTLASTREAD).apply();
-        } else if (itemId == R.id.menu_open_syosetu) {
+        } else if (itemId == R.id.menu_open_syosetu || itemId == R.id.menu_add) {
             Intent intent = new Intent(this, SyosetuActivity.class);
             startActivity(intent);
         } else {
@@ -455,12 +442,9 @@ public class BookListActivity extends AppCompatActivity {
 
         final int statusf = status;
         if (pop) {
-            viewAdder.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    populateBooks(statusf);
-                    invalidateOptionsMenu();
-                }
+            viewAdder.postDelayed(() -> {
+                populateBooks(statusf);
+                invalidateOptionsMenu();
             }, 120);
         }
 
@@ -552,63 +536,11 @@ public class BookListActivity extends AppCompatActivity {
         recentread = db.getMostRecentlyRead();
     }
 
-    private boolean addBook(String filename) {
-        return addBook(filename, true, System.currentTimeMillis());
-    }
-
-    private boolean addBook(String filename, boolean showToastWarnings, long dateadded) {
-
-        try {
-            if (db.containsBook(filename)) {
-
-                if (showToastWarnings) {
-                    Toast.makeText(this, getString(R.string.already_added, new File(filename).getName()), Toast.LENGTH_SHORT).show();
-                }
-                return false;
-            }
-
-            BookMetadata metadata = Book.getBookMetaData(this, filename);
-
-            if (metadata != null) {
-
-                return db.addBook(filename, metadata.getTitle(), metadata.getAuthor(), dateadded) > -1;
-
-            } else if (showToastWarnings) {
-                Toast.makeText(this, getString(R.string.coulndt_add_book, new File(filename).getName()), Toast.LENGTH_SHORT).show();
-            }
-
-        } catch (Exception e) {
-            Log.e("BookList", "File: " + filename + ", " + e.getMessage(), e);
-        }
-        return false;
-    }
-
-    private void findFile() {
-
-        FsTools fsTools = new FsTools(this);
-
-        if (checkStorageAccess(false)) {
-            fsTools.selectExternalLocation(new FsTools.SelectionMadeListener() {
-                @Override
-                public void selected(File selection) {
-                    addBook(selection.getPath());
-                    populateBooks();
-
-                }
-            }, getString(R.string.find_book), false, Book.getFileExtensionRX());
-        }
-    }
-
     private void showProgress(int added) {
 
         if (tv.getVisibility() != View.VISIBLE) {
             tv.setVisibility(View.VISIBLE);
-            tv.setOnTouchListener(new View.OnTouchListener() {
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    return true;
-                }
-            });
+            tv.setOnTouchListener((v, event) -> true);
         }
         if (added > 0) {
             tv.setText(getString(R.string.added_numbooks, added));
@@ -619,92 +551,6 @@ public class BookListActivity extends AppCompatActivity {
 
     private void hideProgress() {
         tv.setVisibility(View.GONE);
-    }
-
-
-    private void addDir(File dir) {
-
-        viewAdder.showProgress(0);
-        new AddDirTask(this, dir).execute(dir);
-    }
-
-    private static class AddDirTask extends AsyncTask<File, Void, Void> {
-
-        int added = 0;
-        private final WeakReference<BookListActivity> blactref;
-        private final File dir;
-
-
-        AddDirTask(BookListActivity blact, File dir) {
-            blactref = new WeakReference<>(blact);
-            this.dir = dir;
-        }
-
-        @Override
-        protected Void doInBackground(File... dirs) {
-            BookListActivity blact = blactref.get();
-            if (blact != null && dirs != null) {
-                long time = System.currentTimeMillis();
-                for (File d : dirs) {
-                    try {
-                        if (d == null || !d.isDirectory()) continue;
-                        for (final File file : d.listFiles()) {
-                            try {
-                                if (file == null) continue;
-                                if (file.isFile() && file.getName().matches(Book.getFileExtensionRX())) {
-                                    if (blact.addBook(file.getPath(), false, time)) {
-                                        added++;
-                                    }
-                                    blact.viewAdder.showProgress(added);
-
-                                } else if (file.isDirectory()) {
-                                    doInBackground(file);
-                                }
-                            } catch (Exception e) {
-                                Log.e("Booky", e.getMessage(), e);
-                            }
-                        }
-                    } catch (Exception e) {
-                        Log.e("Booky", e.getMessage(), e);
-                    }
-                }
-            }
-            return null;
-        }
-
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            BookListActivity blact = blactref.get();
-            if (blact != null) {
-                blact.viewAdder.hideProgress();
-                Toast.makeText(blact, blact.getString(R.string.books_added, added), Toast.LENGTH_LONG).show();
-                blact.populateBooks();
-            }
-        }
-
-        @Override
-        protected void onCancelled(Void aVoid) {
-            BookListActivity blact = blactref.get();
-            if (blact != null) {
-                blact.viewAdder.hideProgress();
-            }
-            super.onCancelled(aVoid);
-        }
-    }
-
-    private void findDir() {
-
-        FsTools fsTools = new FsTools(this);
-
-        if (checkStorageAccess(false)) {
-            fsTools.selectExternalLocation(new FsTools.SelectionMadeListener() {
-                @Override
-                public void selected(File selection) {
-                    addDir(selection);
-                }
-            }, getString(R.string.find_folder), true);
-        }
     }
 
 

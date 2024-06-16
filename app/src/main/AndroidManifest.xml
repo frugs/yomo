@@ -37,9 +37,6 @@
         <activity
             android:name=".ReaderActivity"
             android:parentActivityName=".BookListActivity" />
-        <activity
-            android:name=".GetBooksActivity"
-            android:parentActivityName=".BookListActivity" />
 
         <service android:name="com.frugs.yomo.syosetu.SyosetuDownloadJobService"
             android:exported="false"
