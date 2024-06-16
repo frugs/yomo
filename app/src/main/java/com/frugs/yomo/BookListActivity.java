@@ -245,7 +245,6 @@ public class BookListActivity extends AppCompatActivity {
     }
 
     private void populateBooks(int status) {
-        //Log.d("BOOKLIST", "populateBooks " + status);
         showStatus = status;
         data.edit().putInt(LASTSHOW_STATUS_KEY, showStatus).apply();
 
@@ -534,8 +533,8 @@ public class BookListActivity extends AppCompatActivity {
     }
 
 
-    private void removeBook(int bookid, boolean delete) {
-        BookDb.BookRecord book = db.getBookRecord(bookid);
+    private void removeBook(int bookId, boolean delete) {
+        BookDb.BookRecord book = db.getBookRecord(bookId);
         if (book == null) {
             Toast.makeText(this, "Bug? The book doesn't seem to be in the database", Toast.LENGTH_LONG).show();
             return;
@@ -544,13 +543,12 @@ public class BookListActivity extends AppCompatActivity {
             Book.remove(this, new File(book.filename));
         }
         if (delete) {
-            db.removeBook(bookid);
-            if (bookAdapter != null) bookAdapter.notifyItemIdRemoved(bookid);
+            db.removeBook(bookId);
+            if (bookAdapter != null) {
+                bookAdapter.notifyItemIdRemoved(bookId);
+            }
         }
-//        else if (status!=BookDb.STATUS_ANY) {
-//            //db.updateLastRead(bookid, -1);
-//            db.updateStatus(bookid, status);
-//        }
+
         recentread = db.getMostRecentlyRead();
     }
 

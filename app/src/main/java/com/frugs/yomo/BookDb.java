@@ -61,8 +61,6 @@ public class BookDb extends SQLiteOpenHelper {
     public final static int STATUS_ANY = -1;
     public final static int STATUS_SEARCH = -2;
 
-
-
     public BookDb(Context context) {
         super(context, DBNAME, null, DBVERSION);
         this.context = context;
@@ -85,15 +83,15 @@ public class BookDb extends SQLiteOpenHelper {
                         BOOK_AUTHOR + " TEXT," +
                         BOOK_LIB_AUTHOR + " TEXT," +
                         BOOK_FILENAME + " TEXT," +
-                        BOOK_ADDED    + " INTEGER," +
+                        BOOK_ADDED + " INTEGER," +
                         BOOK_LASTREAD + " INTEGER," +
-                        BOOK_STATUS  + " INTEGER" +
-                 ")";
+                        BOOK_STATUS + " INTEGER" +
+                        ")";
         db.execSQL(createbooktable);
 
-        String [] indexcolums = {BOOK_LIB_TITLE, BOOK_LIB_AUTHOR, BOOK_FILENAME, BOOK_ADDED, BOOK_LASTREAD};
+        String[] indexcolums = {BOOK_LIB_TITLE, BOOK_LIB_AUTHOR, BOOK_FILENAME, BOOK_ADDED, BOOK_LASTREAD};
 
-        for (String col: indexcolums) {
+        for (String col : indexcolums) {
             db.execSQL("create index ind_" + col + " on " + BOOK_TABLE + " (" + col + ")");
         }
 
@@ -101,17 +99,15 @@ public class BookDb extends SQLiteOpenHelper {
                 "create table " + WEBS_TABLE + "( " +
                         WEBS_URL + " TEXT PRIMARY KEY," +
                         WEBS_NAME + " TEXT" +
-                    ")";
+                        ")";
         db.execSQL(createwebstable);
 
-        String [] wnames = context.getResources().getStringArray(R.array.getbook_names);
-        String [] wurls = context.getResources().getStringArray(R.array.getbook_urls);
+        String[] wnames = context.getResources().getStringArray(R.array.getbook_names);
+        String[] wurls = context.getResources().getStringArray(R.array.getbook_urls);
 
-        for (int i=0; i<wnames.length; i++) {
+        for (int i = 0; i < wnames.length; i++) {
             addWebsite(db, wnames[i], wurls[i]);
         }
-
-
     }
 
     @Override
@@ -139,12 +135,6 @@ public class BookDb extends SQLiteOpenHelper {
             return bookcursor.moveToNext();
         }
 
-    }
-
-    public boolean removeBook(String filename) {
-        SQLiteDatabase db = this.getWritableDatabase();
-
-        return db.delete(BOOK_TABLE, BOOK_FILENAME + "=?", new String[] {filename})>0;
     }
 
     public boolean removeBook(int id) {
@@ -238,10 +228,19 @@ public class BookDb extends SQLiteOpenHelper {
 
     public long getLastReadTime(int id) {
         SQLiteDatabase db = this.getReadableDatabase();
-        try (Cursor bookscursor = db.query(BOOK_TABLE, new String[] {BOOK_LASTREAD}, BOOK_ID + "=?", new String[] {""+id}, null, null, null)) {
-
+        try (Cursor bookscursor = db.query(
+                BOOK_TABLE,
+                new String[]{BOOK_LASTREAD},
+                BOOK_ID + "=?",
+                new String[]{"" + id},
+                null,
+                null,
+                null)) {
             if (bookscursor.moveToNext()) {
-                return bookscursor.getLong(bookscursor.getColumnIndex(BOOK_LASTREAD));
+                int columnIndex = bookscursor.getColumnIndex(BOOK_LASTREAD);
+                if (columnIndex >= 0) {
+                    return bookscursor.getLong(columnIndex);
+                }
             }
         }
         return -1;
@@ -250,38 +249,56 @@ public class BookDb extends SQLiteOpenHelper {
 
     public long getAddedTime(int id) {
         SQLiteDatabase db = this.getReadableDatabase();
-        try (Cursor bookscursor = db.query(BOOK_TABLE, new String[] {BOOK_ADDED}, BOOK_ID + "=?", new String[] {""+id}, null, null, null)) {
-
+        try (Cursor bookscursor = db.query(
+                BOOK_TABLE,
+                new String[]{BOOK_ADDED},
+                BOOK_ID + "=?",
+                new String[]{"" + id},
+                null,
+                null,
+                null)) {
             if (bookscursor.moveToNext()) {
-                return bookscursor.getLong(bookscursor.getColumnIndex(BOOK_ADDED));
+                int columnIndex = bookscursor.getColumnIndex(BOOK_ADDED);
+                if (columnIndex >= 0) {
+                    return bookscursor.getLong(columnIndex);
+                }
             }
         }
         return -1;
     }
 
-
     public int getStatus(int id) {
         SQLiteDatabase db = this.getReadableDatabase();
-        try (Cursor bookscursor = db.query(BOOK_TABLE, new String[] {BOOK_STATUS}, BOOK_ID + "=?", new String[] {""+id}, null, null, null)) {
-
+        try (Cursor bookscursor = db.query(BOOK_TABLE,
+                new String[]{BOOK_STATUS},
+                BOOK_ID + "=?",
+                new String[]{"" + id},
+                null,
+                null,
+                null)) {
             if (bookscursor.moveToNext()) {
-                return bookscursor.getInt(bookscursor.getColumnIndex(BOOK_STATUS));
+                int columnIndex = bookscursor.getColumnIndex(BOOK_STATUS);
+                if (columnIndex >= 0) {
+                    return bookscursor.getInt(columnIndex);
+                }
             }
         }
         return 0;
     }
 
-
     public int getMostRecentlyRead() {
         SQLiteDatabase db = this.getReadableDatabase();
         try (Cursor bookscursor =
                      db.rawQuery(
-                           "select " + BOOK_ID + " from " + BOOK_TABLE +
-                             " where " + BOOK_LASTREAD +
-                                   " = (select max(" + BOOK_LASTREAD +") from " + BOOK_TABLE + " where " + BOOK_LASTREAD + ">0) and " + BOOK_STATUS +"=" + STATUS_STARTED, null)) {
-
+                             "select " + BOOK_ID + " from " + BOOK_TABLE +
+                                     " where " + BOOK_LASTREAD +
+                                     " = (select max(" + BOOK_LASTREAD + ") from " + BOOK_TABLE + " where " + BOOK_LASTREAD + ">0) and " + BOOK_STATUS + "=" + STATUS_STARTED,
+                             null)) {
             if (bookscursor.moveToNext()) {
-                return bookscursor.getInt(bookscursor.getColumnIndex(BOOK_ID));
+                int columnIndex = bookscursor.getColumnIndex(BOOK_ID);
+                if (columnIndex >= 0) {
+                    return bookscursor.getInt(columnIndex);
+                }
             }
         }
         return -1;
@@ -298,28 +315,6 @@ public class BookDb extends SQLiteOpenHelper {
         br.added = bookscursor.getLong(bookscursor.getColumnIndex(BOOK_ADDED));
         br.status = bookscursor.getInt(bookscursor.getColumnIndex(BOOK_STATUS));
         return br;
-    }
-
-    public List<BookRecord> getBooks(SortOrder sortOrder) {
-        SQLiteDatabase db = this.getReadableDatabase();
-
-        List<BookRecord> books = new ArrayList<>();
-
-        String orderby = BOOK_ADDED;
-        switch (sortOrder) {
-            case Title: orderby = BOOK_LIB_TITLE; break;
-            case Author: orderby = BOOK_LIB_AUTHOR; break;
-        }
-
-        try (Cursor bookscursor = db.query(BOOK_TABLE,new String[] {BOOK_ID, BOOK_FILENAME, BOOK_TITLE, BOOK_AUTHOR, BOOK_LASTREAD, BOOK_ADDED},null, null, null, null, orderby)) {
-
-            while (bookscursor.moveToNext()) {
-                BookRecord br = getBookRecord(bookscursor);
-                books.add(br);
-            }
-        }
-
-        return books;
     }
 
     public List<Integer> getBookIds(SortOrder sortOrder, int status) {
@@ -402,14 +397,6 @@ public class BookDb extends SQLiteOpenHelper {
         public int status;
 
     }
-
-
-//    String createwebstable =
-//            "create table " + WEBS_TABLE + "( " +
-//                    WEBS_URL + " TEXT PRIMARY KEY," +
-//                    WEBS_NAME + " TEXT" +
-//                    ")";
-
 
     public int addWebsite(String name, String url) {
         SQLiteDatabase db = this.getWritableDatabase();

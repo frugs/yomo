@@ -58,34 +58,26 @@ public class GetBooksActivity extends Activity implements View.OnClickListener, 
         final LinearLayout add_layout= findViewById(R.id.web_add_layout);
 
 
-        wadd.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (urlBox.getText().length()>0) {
-                    String url = urlBox.getText().toString();
-                    String name = url.replaceAll("^https?://([\\w\\-.])(/.*)","$1");
-                    if (nameBox.getText().length()>0) {
-                        name = nameBox.getText().toString();
-                    }
-                    db.addWebsite(name, url);
-                    displayWeb(name, url, true);
-                    InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
-                    if (imm!=null) imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
-                    add_layout.setVisibility(View.GONE);
-                    wnew.setVisibility(View.VISIBLE);
+        wadd.setOnClickListener(v -> {
+            if (urlBox.getText().length()>0) {
+                String url = urlBox.getText().toString();
+                String name = url.replaceAll("^https?://([\\w\\-.])(/.*)","$1");
+                if (nameBox.getText().length()>0) {
+                    name = nameBox.getText().toString();
                 }
+                db.addWebsite(name, url);
+                displayWeb(name, url, true);
+                InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm!=null) imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+                add_layout.setVisibility(View.GONE);
+                wnew.setVisibility(View.VISIBLE);
             }
         });
 
-        wnew.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                add_layout.setVisibility(View.VISIBLE);
-                wnew.setVisibility(View.GONE);
-            }
+        wnew.setOnClickListener(v -> {
+            add_layout.setVisibility(View.VISIBLE);
+            wnew.setVisibility(View.GONE);
         });
-
-
 
         Map<String,String> webs = db.getWebSites();
 

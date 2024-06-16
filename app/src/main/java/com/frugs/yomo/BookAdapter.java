@@ -12,7 +12,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
 
 
-public class BookAdapter extends  RecyclerView.Adapter<BookAdapter.BookViewHolder> {
+public class BookAdapter extends RecyclerView.Adapter<BookAdapter.BookViewHolder> {
     private final List<Integer> mBookIds;
     private final BookDb mDB;
     private final Context mContext;
@@ -26,6 +26,7 @@ public class BookAdapter extends  RecyclerView.Adapter<BookAdapter.BookViewHolde
         final TextView mTitleView;
         final TextView mAuthorView;
         final TextView mStatusView;
+
         BookViewHolder(ViewGroup listEntry) {
             super(listEntry);
             mBookEntry = listEntry;
@@ -54,8 +55,8 @@ public class BookAdapter extends  RecyclerView.Adapter<BookAdapter.BookViewHolde
     }
 
     public void notifyItemIdRemoved(long id) {
-        int pos = mBookIds.indexOf((int)id);
-        if (pos>=0) {
+        int pos = mBookIds.indexOf((int) id);
+        if (pos >= 0) {
             mBookIds.remove(pos);
             notifyItemRemoved(pos);
         }
@@ -63,8 +64,8 @@ public class BookAdapter extends  RecyclerView.Adapter<BookAdapter.BookViewHolde
     }
 
     public void notifyItemIdChanged(long id) {
-        int pos = mBookIds.indexOf((int)id);
-        if (pos>=0) {
+        int pos = mBookIds.indexOf((int) id);
+        if (pos >= 0) {
             notifyItemChanged(pos);
         }
 
@@ -88,7 +89,7 @@ public class BookAdapter extends  RecyclerView.Adapter<BookAdapter.BookViewHolde
     @NonNull
     @Override
     public BookAdapter.BookViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        ViewGroup listEntry = (ViewGroup)LayoutInflater.from(parent.getContext()).inflate(R.layout.book_list_item, parent, false);
+        ViewGroup listEntry = (ViewGroup) LayoutInflater.from(parent.getContext()).inflate(R.layout.book_list_item, parent, false);
 
         return new BookViewHolder(listEntry);
     }
@@ -107,12 +108,12 @@ public class BookAdapter extends  RecyclerView.Adapter<BookAdapter.BookViewHolde
             long time = lastread;
 
             int text;
-            if (book.status==BookDb.STATUS_DONE) {
+            if (book.status == BookDb.STATUS_DONE) {
                 text = R.string.book_status_completed;
-            } else if (book.status==BookDb.STATUS_LATER) {
+            } else if (book.status == BookDb.STATUS_LATER) {
                 time = 0;
                 text = R.string.book_status_later;
-            } else if (lastread>0 && book.status==BookDb.STATUS_STARTED) {
+            } else if (lastread > 0 && book.status == BookDb.STATUS_STARTED) {
                 text = R.string.book_viewed_on;
             } else {
                 time = book.added;
@@ -123,7 +124,7 @@ public class BookAdapter extends  RecyclerView.Adapter<BookAdapter.BookViewHolde
 
             holder.mStatusView.setTextSize(12);
 
-            if (text==R.string.book_viewed_on) {
+            if (text == R.string.book_viewed_on) {
                 holder.mStatusView.setTextSize(14);
             }
             holder.mStatusView.setText(mContext.getString(text, rtime));
@@ -132,7 +133,7 @@ public class BookAdapter extends  RecyclerView.Adapter<BookAdapter.BookViewHolde
             holder.mBookEntry.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    if (mOnClickListener!=null) {
+                    if (mOnClickListener != null) {
                         mOnClickListener.onClick(view);
                     }
                 }
@@ -148,7 +149,7 @@ public class BookAdapter extends  RecyclerView.Adapter<BookAdapter.BookViewHolde
         holder.mBookEntry.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View view) {
-                if (mOnLongClickListener!=null) {
+                if (mOnLongClickListener != null) {
                     return mOnLongClickListener.onLongClick(view);
                 }
                 return false;
