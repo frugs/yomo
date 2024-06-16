@@ -3,19 +3,25 @@ package com.frugs.yomo.syosetu
 import android.app.Notification
 import android.app.job.JobParameters
 import android.app.job.JobService
+import android.util.Log
 import androidx.core.net.toFile
 import androidx.core.net.toUri
 import com.frugs.yomo.BookyApp
 import com.frugs.yomo.R
+import com.frugs.yomo.TAG
 import com.frugs.yomo.book.SyosetuBook
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import org.jsoup.HttpStatusException
 import java.io.File
+import java.io.IOException
 
 class SyosetuDownloadJobService : JobService() {
 
@@ -27,6 +33,7 @@ class SyosetuDownloadJobService : JobService() {
 
   private val jobs = mutableMapOf<String, Job>()
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   override fun onStartJob(params: JobParameters?): Boolean {
     if (params == null) {
       return false
@@ -82,12 +89,28 @@ class SyosetuDownloadJobService : JobService() {
         .putInt(SyosetuBook.KEY_PAGE_COUNT, pages)
         .apply()
 
+      val dispatcher = Dispatchers.IO.limitedParallelism(5)
       (1..pages).map { i ->
-        launch {
+        launch(dispatcher) {
           val outFile = File(bookDir, "${i}.html")
-          if (!outFile.exists()) {
-            val text = syosetuService.getText(ncode, i)
-            outFile.writeText(text)
+          var attempt = 0
+          while (!outFile.exists() && attempt++ < 10) {
+            try {
+              val text = syosetuService.getText(ncode, i)
+              outFile.writeText(text)
+              bookData.edit()
+                .putInt(SyosetuBook.KEY_PAGE_REVISION_PREFIX + i, i)
+                .apply()
+            } catch (ex: HttpStatusException) {
+              if (ex.statusCode == 503) {
+                Log.e(this.TAG, "Possibly exceed rate limit - delaying next attempt", ex)
+                delay(60 * 1000)
+              } else {
+                Log.e(this.TAG, "Unexpected error fetching page text", ex)
+              }
+            } catch (ex: IOException) {
+              Log.e(this.TAG, "Unexpected error fetching page text", ex)
+            }
           }
         }
       }.joinAll()

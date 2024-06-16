@@ -50,7 +50,6 @@ public abstract class Book {
     private List<String> sectionIDs;
     private int currentSectionIDPos = 0;
 
-    private String subbook;
     private File thisBookDir;
 
     Book(Context context) {
@@ -285,12 +284,8 @@ public abstract class Book {
     public static void remove(Context context, File file) {
         try {
             FsTools.deleteDir(getBookDir(context, file));
-            String fname = getProperFName(context, file);
-            if (Build.VERSION.SDK_INT >= 24) {
-                context.deleteSharedPreferences(fname);
-            } else {
-                getStorage(context, file).edit().clear().commit();
-            }
+            String fName = getProperFName(context, file);
+            context.deleteSharedPreferences(fName);
         } catch (Exception e) {
             Log.e("Book", e.getMessage(), e);
         }
@@ -338,6 +333,9 @@ public abstract class Book {
         return data;
     }
 
+    protected int getCurrentSectionIDPos() {
+        return currentSectionIDPos;
+    }
 
     public static String getFileExtensionRX() {
         return ".*\\.(epub|txt|html?)";

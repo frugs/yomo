@@ -11,6 +11,7 @@ import android.net.NetworkRequest
 import android.net.Uri
 import android.os.PersistableBundle
 import com.frugs.yomo.syosetu.SyosetuDownloadJobService
+import kotlinx.coroutines.DisposableHandle
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.runBlocking
 import java.io.File
@@ -20,22 +21,15 @@ import java.util.Collections
 class SyosetuBook(context: Context?) : Book(context) {
 
   companion object {
-    private val META_PREFIX = "meta."
-    val KEY_PAGE_COUNT = "ordercount"
-    private val BOOK_CONTENT_DIR = "bookContentDir"
-    private val ORDER = "order."
-    private val ITEM = "item."
-    private val TOCCOUNT = "toccount"
-    private val TOC_LABEL = "toc.label."
-    private val TOC_CONTENT = "toc.content."
-    private val TOC = "toc"
+    const val KEY_PAGE_COUNT = "ordercount"
+    const val KEY_PAGE_REVISION_PREFIX = "orderrev."
 
-    private fun getOrderFileName(order: Int): String {
-      return "${order}.html"
+    private fun getPageFileName(pageNumber: Int): String {
+      return "${pageNumber}.html"
     }
   }
 
-  private val docFileOrder: MutableList<String> = ArrayList()
+  private val pageFileNames: MutableList<String> = ArrayList()
 
   private val ncode: String
     get() {
@@ -94,7 +88,7 @@ class SyosetuBook(context: Context?) : Book(context) {
 
     val pages = sharedPreferences.getInt(KEY_PAGE_COUNT, 1)
     for (i in 1..pages) {
-      docFileOrder.add(getOrderFileName(i))
+      pageFileNames.add(getPageFileName(i))
     }
 
   }
@@ -109,7 +103,7 @@ class SyosetuBook(context: Context?) : Book(context) {
   }
 
   override fun getSectionIds(): List<String>? {
-    return Collections.unmodifiableList(docFileOrder)
+    return Collections.unmodifiableList(pageFileNames)
   }
 
   override fun getUriForSectionID(id: String): Uri? {
@@ -118,5 +112,23 @@ class SyosetuBook(context: Context?) : Book(context) {
 
   override fun locateReadPoint(section: String): ReadPoint? {
     return null
+  }
+
+  fun addCurrentPageUpdatedListener(listener: () -> Unit): AutoCloseable {
+    return object : OnSharedPreferenceChangeListener, AutoCloseable {
+      init {
+        sharedPreferences.registerOnSharedPreferenceChangeListener(this)
+      }
+
+      override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+        if (key != null && key == KEY_PAGE_REVISION_PREFIX + (currentSectionIDPos + 1)) {
+          listener()
+        }
+      }
+
+      override fun close() {
+        sharedPreferences.unregisterOnSharedPreferenceChangeListener(this)
+      }
+    }
   }
 }

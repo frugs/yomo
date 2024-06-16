@@ -5,6 +5,7 @@ import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.ColorDrawable;
@@ -16,7 +17,6 @@ import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.FileObserver;
 import android.os.Handler;
 import android.util.Log;
 import android.view.GestureDetector;
@@ -43,6 +43,7 @@ import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.FlingAnimation;
 
 import com.frugs.yomo.book.Book;
+import com.frugs.yomo.book.SyosetuBook;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -50,6 +51,8 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import kotlin.Unit;
 
 /**
  * Copyright (C) 2017   Tom Kliethermes
@@ -93,7 +96,7 @@ public class ReaderActivity extends Activity {
 
     private boolean hasLightSensor = false;
 
-    private FileObserver fileObserver = null;
+    private AutoCloseable pageReadyListener = null;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -514,29 +517,23 @@ public class ReaderActivity extends Activity {
         if (uri != null) {
             Log.d(TAG, "trying to load " + uri);
 
-            if (fileObserver != null) {
-                fileObserver.stopWatching();
+            if (pageReadyListener != null) {
+                try {
+                    pageReadyListener.close();
+                } catch (Exception e) {
+                    Log.e(TAG, "Unexpected error closing page ready listener", e);
+                }
+            }
+
+            if (book instanceof SyosetuBook syosetu) {
+                pageReadyListener = syosetu.addCurrentPageUpdatedListener(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    webView.loadUrl(uri.toString());
+                    return Unit.INSTANCE;
+                });
             }
 
             File file = new File(uri.getPath());
-            int mask = FileObserver.CREATE | FileObserver.MODIFY | FileObserver.MOVED_TO | FileObserver.MOVE_SELF;
-            fileObserver = new FileObserver(file) {
-                @Override
-                public void onEvent(int event, @Nullable String path) {
-                    try {
-                        if ((event & mask) == 0) {
-                            return;
-                        }
-
-                        progressBar.setVisibility(View.GONE);
-                        webView.loadUrl(uri.toString());
-                    } catch (Throwable tr) {
-                        Log.e(TAG, "Error swallowed in file observer", tr);
-                    }
-                }
-            };
-            fileObserver.startWatching();
-
             if (file.exists()) {
                 progressBar.setVisibility(View.GONE);
                 webView.loadUrl(uri.toString());
@@ -551,7 +548,6 @@ public class ReaderActivity extends Activity {
             Log.d(TAG, "clicked on " + clickedLink);
             showUri(book.handleClickedLink(clickedLink));
         }
-
     }
 
 
@@ -590,21 +586,18 @@ public class ReaderActivity extends Activity {
             mi.setCheckable(true);
             mi.setChecked(size==defsize);
 
-            mi.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                @Override
-                public boolean onMenuItemClick(MenuItem menuItem) {
-                    Log.d(TAG, "def " + (defsize-s));
-                    int scrolloffset = (int)(-webView.getScrollY()*(defsize - s)/scale/2.7);
-                    Log.d(TAG, "scrollby " + scrolloffset);
+            mi.setOnMenuItemClickListener(menuItem -> {
+                Log.d(TAG, "def " + (defsize-s));
+                int scrolloffset = (int)(-webView.getScrollY()*(defsize - s)/scale/2.7);
+                Log.d(TAG, "scrollby " + scrolloffset);
 
-                    setFontSize(s);
+                setFontSize(s);
 
-                    //attempt to adjust the scroll to keep the same text position.
-                    //  needs much work
-                    webView.scrollBy(0, scrolloffset);
-                    sizemenu.dismiss();
-                    return true;
-                }
+                //attempt to adjust the scroll to keep the same text position.
+                //  needs much work
+                webView.scrollBy(0, scrolloffset);
+                sizemenu.dismiss();
+                return true;
             });
         }
         sizemenu.show();
@@ -683,9 +676,12 @@ public class ReaderActivity extends Activity {
             timer = null;
         }
 
-        if (fileObserver != null) {
-            fileObserver.stopWatching();
-            fileObserver = null;
+        if (pageReadyListener != null) {
+            try {
+                pageReadyListener.close();
+            } catch (Exception e) {
+                Log.e(TAG, "Unexpected error closing page ready listener", e);
+            }
         }
 
         super.onDestroy();
@@ -704,12 +700,9 @@ public class ReaderActivity extends Activity {
             String text = tocmap.get(point);
             MenuItem m = tocmenu.getMenu().add(text);
             //Log.d("EPUB", "TOC2: " + text + ". File: " + point);
-            m.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                @Override
-                public boolean onMenuItemClick(MenuItem menuItem) {
-                    handleLink(point);
-                    return true;
-                }
+            m.setOnMenuItemClickListener(menuItem -> {
+                handleLink(point);
+                return true;
             });
         }
         if (tocmap.size()==0) {
